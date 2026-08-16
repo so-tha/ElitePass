@@ -12,8 +12,6 @@ import {
   getCategory,
 } from "@/lib/ticketmaster";
 
-// ── Skeleton de loading ──────────────────────────────────
-
 function CardSkeleton() {
   return (
     <div className={styles.showCard} style={{ pointerEvents: "none" }}>
@@ -28,7 +26,6 @@ function CardSkeleton() {
   );
 }
 
-// ── Componente principal ─────────────────────────────────
 
 export default function Home() {
   const [events, setEvents] = useState<TMEvent[]>([]);
@@ -60,12 +57,10 @@ export default function Home() {
     }
   }, []);
 
-  // Busca inicial
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
 
-  // Debounce na busca
   useEffect(() => {
     if (!search) {
       fetchEvents();
@@ -77,7 +72,6 @@ export default function Home() {
 
   return (
     <div className={styles.root}>
-      {/* ───── NAVBAR ───── */}
       <header className={styles.navbar}>
         <div className={styles.navInner}>
           <a href="/" className={styles.logo} id="logo-home">
@@ -113,7 +107,6 @@ export default function Home() {
             Encontre seu próximo <span className={styles.highlight}>show</span>
           </h1>
           <div className={styles.searchBar}>
-            <span className={styles.searchIcon}>🔍</span>
             <input
               id="input-busca"
               type="text"
@@ -136,14 +129,12 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ───── ERRO ───── */}
         {error && (
           <div className={styles.errorBanner}>
             ⚠️ {error}
           </div>
         )}
 
-        {/* ───── SHOW EM DESTAQUE ───── */}
         {!error && (
           <section className={styles.featuredSection}>
             <h2 className={styles.sectionTitle}>Show em Destaque</h2>
@@ -180,7 +171,7 @@ export default function Home() {
                       className={styles.btnEmbarcar}
                       id="btn-embarcar-destaque"
                     >
-                      Embarcar 🎟️
+                      Confira
                     </a>
                   </div>
                 </div>
@@ -189,7 +180,6 @@ export default function Home() {
           </section>
         )}
 
-        {/* ───── SHOWS HORIZONTAIS ───── */}
         {!error && (
           <section className={styles.showsSection}>
             <div className={styles.sectionHeader}>
@@ -235,10 +225,10 @@ export default function Home() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className={styles.btnCard}
-                            id={`btn-embarcar-${event.id}`}
+                            id={`btn-confira-${event.id}`}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            Embarcar
+                            Confira
                           </a>
                         </div>
                       </div>

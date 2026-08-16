@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.json({ message: '🎟️ ElitePass API is running!' });
+  res.json({ message: 'ElitePass API is running!' });
 });
 
 app.listen(PORT, () => {

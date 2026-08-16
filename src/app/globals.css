@@ -5,7 +5,6 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-/* --- Tokens de cor --- */
 :root {
   /* 60% — Preto/Fundo */
   --color-bg:          #000000;
@@ -41,7 +40,6 @@
   --transition: 0.2s ease;
 }
 
-/* --- Reset --- */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -81,7 +79,6 @@ img {
   max-width: 100%;
 }
 
-/* --- Scrollbar personalizada --- */
 ::-webkit-scrollbar {
   width: 6px;
 }
