@@ -56,26 +56,83 @@ Reservado para **textos de leitura rápida**, labels de formulário e ícones si
 
 ## 🛠️ Tecnologias
 
-> *(A definir conforme o desenvolvimento avança)*
+### Frontend
+- ⚛️ **React** — Biblioteca para construção de interfaces reativas e componentizadas
+- 🔺 **Next.js** — Framework React com SSR, SSG e roteamento integrado (App Router)
+- 🟦 **TypeScript** — Tipagem estática para maior segurança e produtividade
 
-- Frontend: —
-- Backend: —
-- Pagamentos: —
-- Banco de dados: —
+### Backend
+- 🟩 **Node.js** — Runtime JavaScript para a API e lógica de negócio do servidor
+- 🚂 **Express** — Framework minimalista para criação das rotas da API REST
+- 🟦 **TypeScript** — Tipagem no backend para consistência com o frontend
+
+### Banco de Dados
+- 🐘 **PostgreSQL** — Banco de dados relacional com suporte a transações ACID (essencial para pagamentos)
+- 🔷 **Prisma ORM** — Interface elegante entre o Node.js e o PostgreSQL, com migrations e Prisma Studio
+
+### Ferramentas & Infra
+- **Git & GitHub** — Controle de versão e repositório remoto
+- Pagamentos: *(a definir)*
+
+---
+
+## 📁 Estrutura do Projeto
+
+```
+ElitePass/                 # Raiz = Frontend Next.js (deploy direto no Vercel)
+├── src/
+│   └── app/               # App Router do Next.js
+├── public/                # Arquivos estáticos
+├── package.json           # Dependências do frontend
+├── next.config.ts
+├── tsconfig.json
+│
+└── backend/               # API Node.js (deploy separado — Railway, Render etc.)
+    ├── src/
+    │   └── server.ts      # Ponto de entrada da API
+    └── prisma/
+        └── schema.prisma  # Modelos do banco de dados
+```
 
 ---
 
 ## 🚀 Como rodar o projeto
 
-> *(Instruções serão adicionadas conforme o projeto evolui)*
+### Pré-requisitos
+- Node.js 18+
+- PostgreSQL instalado e rodando
+- npm
+
+### Frontend (raiz do projeto)
 
 ```bash
-# Clone o repositório
-git clone https://github.com/so-tha/ElitePass.git
-
-# Acesse o diretório
-cd ElitePass
+npm install
+npm run dev
+# Acesse: http://localhost:3000
 ```
+
+### Backend
+
+```bash
+cd backend
+
+# Configure a variável de ambiente
+cp .env.example .env
+# Edite o .env com sua DATABASE_URL do PostgreSQL
+
+npm install
+npm run db:migrate    # Aplica as migrations no banco
+npm run dev           # Inicia o servidor em modo desenvolvimento
+# Acesse: http://localhost:3001
+```
+
+### Deploy
+
+| Camada | Plataforma recomendada |
+|--------|------------------------|
+| **Frontend** (raiz) | Vercel — detecção automática do Next.js |
+| **Backend** (`/backend`) | Railway ou Render |
+| **Banco de dados** | Supabase (PostgreSQL gerenciado) |
 
 ---
 
