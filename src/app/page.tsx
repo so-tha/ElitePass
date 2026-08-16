@@ -1,94 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import styles from "./page.module.css";
+import {
+  TMEvent,
+  getBestImage,
+  formatPrice,
+  formatDate,
+  getArtistName,
+  getVenue,
+  getCategory,
+} from "@/lib/ticketmaster";
 
-/* ---------- Dados de exemplo ---------- */
-const shows = [
-  {
-    id: 1,
-    title: "The Weeknd — After Hours Tour",
-    artist: "The Weeknd",
-    date: "22 Set 2025",
-    venue: "Allianz Parque, SP",
-    price: "R$ 380",
-    category: "Pop",
-    image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80",
-  },
-  {
-    id: 2,
-    title: "Metallica — M72 World Tour",
-    artist: "Metallica",
-    date: "05 Out 2025",
-    venue: "Estádio Nilton Santos, RJ",
-    price: "R$ 520",
-    category: "Rock",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80",
-  },
-  {
-    id: 3,
-    title: "Beyoncé — Renaissance World Tour",
-    artist: "Beyoncé",
-    date: "18 Out 2025",
-    venue: "Arena BRB, DF",
-    price: "R$ 450",
-    category: "R&B",
-    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&q=80",
-  },
-  {
-    id: 4,
-    title: "Dua Lipa — Future Nostalgia Tour",
-    artist: "Dua Lipa",
-    date: "30 Out 2025",
-    venue: "Pedreira Paulo Leminski, PR",
-    price: "R$ 290",
-    category: "Pop",
-    image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=600&q=80",
-  },
-  {
-    id: 5,
-    title: "Arctic Monkeys — The Car Tour",
-    artist: "Arctic Monkeys",
-    date: "12 Nov 2025",
-    venue: "Vibra São Paulo, SP",
-    price: "R$ 340",
-    category: "Rock",
-    image: "https://images.unsplash.com/photo-1501612780327-45045538702b?w=600&q=80",
-  },
-  {
-    id: 6,
-    title: "Rosalía — Motomami World Tour",
-    artist: "Rosalía",
-    date: "28 Nov 2025",
-    venue: "Teatro Opus, SP",
-    price: "R$ 260",
-    category: "Alternativo",
-    image: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80",
-  },
-  {
-    id: 7,
-    title: "Post Malone — F-1 Trillion Tour",
-    artist: "Post Malone",
-    date: "10 Dez 2025",
-    venue: "Jeunesse Arena, RJ",
-    price: "R$ 420",
-    category: "Hip-Hop",
-    image: "https://images.unsplash.com/photo-1571266028243-3ead19709b55?w=600&q=80",
-  },
-];
+// ── Skeleton de loading ──────────────────────────────────
 
-const featured = shows[0];
+function CardSkeleton() {
+  return (
+    <div className={styles.showCard} style={{ pointerEvents: "none" }}>
+      <div className={`${styles.cardImage} ${styles.skeleton}`} />
+      <div className={styles.cardBody}>
+        <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+        <div className={`${styles.skeletonLine} ${styles.skeletonFull}`} />
+        <div className={`${styles.skeletonLine} ${styles.skeletonMid}`} />
+        <div className={`${styles.skeletonLine} ${styles.skeletonMid}`} />
+      </div>
+    </div>
+  );
+}
+
+// ── Componente principal ─────────────────────────────────
 
 export default function Home() {
+  const [events, setEvents] = useState<TMEvent[]>([]);
+  const [featured, setFeatured] = useState<TMEvent | null>(null);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const filtered = shows.filter(
-    (s) =>
-      s.title.toLowerCase().includes(search.toLowerCase()) ||
-      s.artist.toLowerCase().includes(search.toLowerCase()) ||
-      s.venue.toLowerCase().includes(search.toLowerCase())
-  );
+  const fetchEvents = useCallback(async (keyword = "") => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ countryCode: "BR", size: "20" });
+      if (keyword) params.set("keyword", keyword);
+
+      const res = await fetch(`/api/events?${params}`);
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error ?? "Erro desconhecido");
+
+      const list: TMEvent[] = data.events ?? [];
+      setEvents(list);
+      if (list.length > 0) setFeatured(list[0]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar eventos.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Busca inicial
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  // Debounce na busca
+  useEffect(() => {
+    if (!search) {
+      fetchEvents();
+      return;
+    }
+    const timer = setTimeout(() => fetchEvents(search), 500);
+    return () => clearTimeout(timer);
+  }, [search, fetchEvents]);
 
   return (
     <div className={styles.root}>
@@ -151,79 +136,118 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ───── SHOW EM DESTAQUE ───── */}
-        <section className={styles.featuredSection}>
-          <h2 className={styles.sectionTitle}>Show em Destaque</h2>
-
-          <div className={styles.featuredCard}>
-            <div
-              className={styles.featuredBg}
-              style={{ backgroundImage: `url(${featured.image})` }}
-            />
-            <div className={styles.featuredOverlay} />
-
-            <div className={styles.featuredContent}>
-              <span className={styles.featuredBadge}>{featured.category}</span>
-              <p className={styles.featuredArtist}>{featured.artist}</p>
-              <h3 className={styles.featuredTitle}>{featured.title}</h3>
-
-              <div className={styles.featuredMeta}>
-                <span>📅 {featured.date}</span>
-                <span>📍 {featured.venue}</span>
-              </div>
-
-              <div className={styles.featuredFooter}>
-                <div>
-                  <p className={styles.priceLabel}>A partir de</p>
-                  <p className={styles.priceValue}>{featured.price}</p>
-                </div>
-                <button className={styles.btnEmbarcar} id="btn-embarcar-destaque">
-                  Embarcar 🎟️
-                </button>
-              </div>
-            </div>
+        {/* ───── ERRO ───── */}
+        {error && (
+          <div className={styles.errorBanner}>
+            ⚠️ {error}
           </div>
-        </section>
+        )}
+
+        {/* ───── SHOW EM DESTAQUE ───── */}
+        {!error && (
+          <section className={styles.featuredSection}>
+            <h2 className={styles.sectionTitle}>Show em Destaque</h2>
+
+            {loading || !featured ? (
+              <div className={`${styles.featuredCard} ${styles.skeleton}`} style={{ minHeight: 420 }} />
+            ) : (
+              <div className={styles.featuredCard}>
+                <div
+                  className={styles.featuredBg}
+                  style={{ backgroundImage: `url(${getBestImage(featured.images)})` }}
+                />
+                <div className={styles.featuredOverlay} />
+
+                <div className={styles.featuredContent}>
+                  <span className={styles.featuredBadge}>{getCategory(featured)}</span>
+                  <p className={styles.featuredArtist}>{getArtistName(featured)}</p>
+                  <h3 className={styles.featuredTitle}>{featured.name}</h3>
+
+                  <div className={styles.featuredMeta}>
+                    <span>📅 {formatDate(featured.dates.start.localDate)}</span>
+                    <span>📍 {getVenue(featured)}</span>
+                  </div>
+
+                  <div className={styles.featuredFooter}>
+                    <div>
+                      <p className={styles.priceLabel}>A partir de</p>
+                      <p className={styles.priceValue}>{formatPrice(featured)}</p>
+                    </div>
+                    <a
+                      href={featured.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.btnEmbarcar}
+                      id="btn-embarcar-destaque"
+                    >
+                      Embarcar 🎟️
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* ───── SHOWS HORIZONTAIS ───── */}
-        <section className={styles.showsSection}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>
-              {search ? `Resultados para "${search}"` : "Shows em Cartaz"}
-            </h2>
-            <a href="#" className={styles.seeAll} id="link-ver-todos">
-              Ver todos →
-            </a>
-          </div>
-
-          {filtered.length === 0 ? (
-            <p className={styles.noResults}>Nenhum show encontrado para essa busca.</p>
-          ) : (
-            <div className={styles.showsTrack}>
-              {filtered.map((show) => (
-                <div key={show.id} className={styles.showCard} id={`card-show-${show.id}`}>
-                  <div className={styles.cardImage}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={show.image} alt={show.title} className={styles.cardImg} />
-                    <span className={styles.cardBadge}>{show.category}</span>
-                  </div>
-                  <div className={styles.cardBody}>
-                    <p className={styles.cardArtist}>{show.artist}</p>
-                    <p className={styles.cardTitle}>{show.title}</p>
-                    <p className={styles.cardDate}>📅 {show.date}</p>
-                    <p className={styles.cardVenue}>📍 {show.venue}</p>
-                    <div className={styles.cardFooter}>
-                      <span className={styles.cardPrice}>{show.price}</span>
-                      <button className={styles.btnCard} id={`btn-embarcar-${show.id}`}>
-                        Embarcar
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        {!error && (
+          <section className={styles.showsSection}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>
+                {search ? `Resultados para "${search}"` : "Shows em Cartaz"}
+              </h2>
+              {loading && <span className={styles.loadingDot}>Buscando...</span>}
             </div>
-          )}
-        </section>
+
+            {!loading && events.length === 0 ? (
+              <p className={styles.noResults}>Nenhum show encontrado para essa busca.</p>
+            ) : (
+              <div className={styles.showsTrack}>
+                {loading
+                  ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                  : events.map((event) => (
+                    <div
+                      key={event.id}
+                      className={styles.showCard}
+                      id={`card-show-${event.id}`}
+                      onClick={() => setFeatured(event)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <div className={styles.cardImage}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={getBestImage(event.images)}
+                          alt={event.name}
+                          className={styles.cardImg}
+                          loading="lazy"
+                        />
+                        <span className={styles.cardBadge}>{getCategory(event)}</span>
+                      </div>
+                      <div className={styles.cardBody}>
+                        <p className={styles.cardArtist}>{getArtistName(event)}</p>
+                        <p className={styles.cardTitle}>{event.name}</p>
+                        <p className={styles.cardDate}>📅 {formatDate(event.dates.start.localDate)}</p>
+                        <p className={styles.cardVenue}>📍 {getVenue(event)}</p>
+                        <div className={styles.cardFooter}>
+                          <span className={styles.cardPrice}>{formatPrice(event)}</span>
+                          <a
+                            href={event.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.btnCard}
+                            id={`btn-embarcar-${event.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Embarcar
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </section>
+        )}
       </main>
     </div>
   );

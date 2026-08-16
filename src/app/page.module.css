@@ -11,6 +11,49 @@
   background: var(--color-bg);
 }
 
+/* ── SKELETON ── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #111 25%, #1e1e1e 50%, #111 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: var(--radius-md);
+}
+
+.skeletonLine {
+  height: 12px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  background: linear-gradient(90deg, #111 25%, #1e1e1e 50%, #111 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+.skeletonShort  { width: 45%; }
+.skeletonMid    { width: 70%; }
+.skeletonFull   { width: 95%; }
+
+/* ── ERROR BANNER ── */
+.errorBanner {
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid #8b0000;
+  background: rgba(139, 0, 0, 0.15);
+  color: #ff6b6b;
+  font-size: 14px;
+}
+
+/* ── LOADING DOT ── */
+.loadingDot {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+
 /* ── NAVBAR ── */
 .navbar {
   position: sticky;
