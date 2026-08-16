@@ -6,7 +6,41 @@
 
 ## 📌 Sobre o Projeto
 
-O **ElitePass** é uma aplicação web/mobile voltada para a compra e gestão de ingressos de shows e eventos. O foco é proporcionar uma experiência premium ao usuário: visual impactante, fluxo de compra intuitivo e total confiança na hora de inserir os dados do cartão.
+O **ElitePass** é uma plataforma de compra e gestão de ingressos para shows e eventos. O modelo conecta três perfis de usuário em um fluxo completo:
+
+| Perfil | O que faz |
+|--------|-----------|
+| 🎪 **Organizador** | Monta um evento a partir de um catálogo de shows (API externa), define data, local, capacidade e preço, e publica para venda |
+| 🎫 **Cliente** | Navega pelos eventos publicados, reserva seu lugar, paga de forma simulada, recebe um ingresso com QR Code e pode compartilhá-lo por link |
+| 🚪 **Portaria** | Valida o ingresso do cliente na entrada do evento via leitura do QR Code |
+
+---
+
+## 🗺️ Funcionalidades Planejadas
+
+### Frontend (cliente)
+- [ ] Navegação e busca de eventos (shows em cartaz, data, local, preço)
+- [ ] Página de detalhe do evento
+- [ ] Fluxo de compra com pagamento simulado
+- [ ] Ingresso digital com QR Code
+- [ ] Compartilhamento de ingresso por link
+- [ ] Área do cliente (meus ingressos)
+
+### Frontend (organizador)
+- [ ] Dashboard de criação e gestão de eventos
+- [ ] Integração com API externa de shows/catálogo
+- [ ] Controle de capacidade e vendas em tempo real
+
+### Frontend (portaria)
+- [ ] Leitor de QR Code para validação de ingresso na entrada
+
+### Backend (API Node.js)
+- [ ] Autenticação JWT com três perfis (cliente, organizador, portaria)
+- [ ] CRUD de eventos
+- [ ] Integração com API externa de catálogo de shows
+- [ ] Fluxo de compra e emissão de ingresso
+- [ ] Geração e validação de QR Code
+- [ ] Controle de capacidade e prevenção de venda duplicada (PostgreSQL + transações ACID)
 
 ---
 
