@@ -96,7 +96,6 @@ export default function Home() {
       <header className={styles.navbar}>
         <div className={styles.navInner}>
           <a href="/" className={styles.logo} id="logo-home">
-            <span className={styles.logoIcon}>🎟️</span>
             <span className={styles.logoText}>ElitePass</span>
           </a>
 

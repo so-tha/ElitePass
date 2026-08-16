@@ -29,7 +29,8 @@
   --color-terra:       #854836;
 
   /* Tipografia */
-  --font-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-base:    var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: var(--font-display), 'Bebas Neue', sans-serif;
 
   /* Espaçamentos */
   --radius-sm:  6px;
