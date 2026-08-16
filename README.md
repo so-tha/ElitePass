@@ -19,7 +19,7 @@ A paleta de cores do ElitePass foi definida com o auxílio da **IA Gemini (Googl
 | Proporção | Cor | Hex | RGB | Papel na Interface |
 |-----------|-----|-----|-----|--------------------|
 | **60% — Dominante** | Preto Puro / Cinza Muito Escuro | `#000000` | `rgb(0, 0, 0)` | Fundo principal do app e site |
-| **30% — Secundária** | Azul Royal / Ciano Elétrico | *(a definir)* | — | Botões, destaques e elementos de ação |
+| **30% — Secundária** | Dourado / Ambar |  |  | Botões, destaques e elementos de ação |
 | **10% — Acentuação** | Branco Puro | `#F7F7F7` | `rgb(247, 247, 247)` | Textos de leitura rápida e ícones simples |
 
 > 💡 **Paleta complementar identificada durante o processo criativo com a IA:**
@@ -35,13 +35,13 @@ A paleta de cores do ElitePass foi definida com o auxílio da **IA Gemini (Googl
 
 ### Filosofia por Cor
 
-#### 🖤 60% — Preto Puro ou Cinza Muito Escuro
+#### 60% — Preto Puro ou Cinza Muito Escuro
 Usado como **fundo principal** em toda a aplicação. O fundo escuro faz as artes dos shows **brilharem** naturalmente, cria contraste forte com textos claros e mantém a **identidade limpa e premium** da marca.
 
-#### 🔵 30% — Azul Royal ou Ciano Elétrico
+#### 30% — Dourado / Âmbar
 Traz o sentimento de **segurança, tecnologia e confiabilidade** — sensações essenciais no momento em que o usuário insere os dados do cartão de crédito. Essa cor aparece nos botões principais, bordas de foco e elementos interativos.
 
-#### 🤍 10% — Branco Puro
+#### 10% — Branco Puro
 Reservado para **textos de leitura rápida**, labels de formulário e ícones simples. Sua escassez intencional garante que o olhar do usuário seja guiado sem poluição visual.
 
 ---
@@ -49,7 +49,7 @@ Reservado para **textos de leitura rápida**, labels de formulário e ícones si
 ### Por que essa paleta funciona para o ElitePass?
 
 - **Fundo escuro + artes coloridas de shows** → experiência visual imersiva, como estar em uma arena
-- **Azul no fluxo de pagamento** → associação imediata com bancos e segurança digital
+- **Dourado no fluxo de pagamento** → associação imediata com bancos e segurança digital
 - **Branco/amarelo dourado em textos e CTAs** → alto contraste, acessibilidade e sensação de exclusividade
 
 ---
