@@ -79,7 +79,7 @@ Reservado para **textos de leitura rápida**, labels de formulário e ícones si
 ## 📁 Estrutura do Projeto
 
 ```
-ElitePass/                 # Raiz = Frontend Next.js (deploy direto no Vercel)
+ElitePass/                 # Raiz = Frontend Next.js 
 ├── src/
 │   └── app/               # App Router do Next.js
 ├── public/                # Arquivos estáticos
