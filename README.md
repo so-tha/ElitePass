@@ -19,9 +19,9 @@ O **ElitePass** é uma plataforma de compra e gestão de ingressos para shows e 
 ## 🗺️ Funcionalidades Planejadas
 
 ### Frontend (cliente)
-- [ ] Navegação e busca de eventos (shows em cartaz, data, local, preço)
-- [ ] Página de detalhe do evento
-- [ ] Fluxo de compra com pagamento simulado
+- [x] Navegação e busca de eventos (shows em cartaz, data, local, preço)
+- [x] Página de detalhe do evento
+- [x] Fluxo de compra com pagamento simulado
 - [ ] Ingresso digital com QR Code
 - [ ] Compartilhamento de ingresso por link
 - [ ] Área do cliente (meus ingressos)
@@ -110,10 +110,73 @@ Reservado para **textos de leitura rápida**, labels de formulário e ícones si
 
 ---
 
+## ⚠️ Limitação da API & Solução de Preços Simulados
+
+### O problema
+
+O ElitePass consome a **Ticketmaster Discovery API v2** para buscar eventos reais. Em março de 2025, a Ticketmaster **removeu globalmente o campo `priceRanges`** da resposta padrão dessa API:
+
+```json
+// Resposta real da API para eventos BR (após mar/2025)
+{
+  "id": "ZFIMVHtnMZ17FKC4",
+  "name": "Diego Besou | Rica de Experiência - Teatro da Ilha",
+  "priceRanges": null   // ← campo ausente em praticamente todos os eventos
+}
+```
+
+Isso significa que a **Discovery API** — camada gratuita e pública — não retorna mais valores de ingressos. Os preços reais estão disponíveis apenas na **Commerce API**, que exige aprovação comercial e não faz parte do tier gratuito.
+
+Tentativas de contorno avaliadas:
+
+| Abordagem | Viabilidade | Motivo da descartada |
+|---|---|---|
+| Commerce API (Ticketmaster) | ❌ | Requer aprovação manual e é paga |
+| Web scraping do site oficial | ❌ | Viola os Termos de Serviço + CAPTCHA anti-bot |
+| **Preços simulados determinísticos** | ✅ | Ideal para demo sem venda real |
+
+---
+
+### A solução: `generateMockPrices`
+
+Foi implementada a função `generateMockPrices` em [`src/lib/ticketmaster.ts`](./src/lib/ticketmaster.ts), que gera faixas de preços realistas em BRL de forma **determinística** — ou seja, o mesmo evento **sempre produz o mesmo preço** entre renders, sessões e builds.
+
+**Como funciona:**
+
+1. **Seed pelo `event.id`** — o ID único do evento é usado como semente para um hash numérico (`seededRandom`), garantindo consistência total.
+2. **Tabela de preços por categoria** — os valores de base variam conforme o segmento e gênero do evento, refletindo o mercado brasileiro:
+
+| Segmento / Gênero | Faixa Base (BRL) |
+|---|---|
+| Música — Pop / Rock | R$ 120 – R$ 500 |
+| Música — Sertanejo / Country | R$ 80 – R$ 380 |
+| Música — Eletrônica | R$ 100 – R$ 450 |
+| Música — Jazz / Blues | R$ 60 – R$ 220 |
+| Esportes | R$ 50 – R$ 300 |
+| Teatro / Arte | R$ 60 – R$ 280 |
+| Família | R$ 60 – R$ 250 |
+| Outros | R$ 80 – R$ 350 |
+
+3. **Três tiers automáticos** — a partir da faixa base, são gerados três preços escalonados:
+   - **Pista** → extremo inferior da faixa
+   - **Pista Premium** → ponto médio
+   - **VIP** → extremo superior
+
+4. **Transparência na UI** — quando os preços são simulados, a interface exibe:
+   - Prefixo `~` antes do valor (ex.: `~R$ 70,00`) e label "estimado" no card
+   - Badge discreto `⚠️ Preços simulados — apenas para demonstração` no painel de resumo
+
+**O fluxo de compra permanece 100% funcional** para fins de demonstração: seleção de tier, ajuste de quantidade, cálculo de taxa de serviço (12%), checkout com formulário validado e tela de confirmação com QR Code simulado.
+
+> 💡 **Nota:** Caso a Ticketmaster volte a retornar `priceRanges` na Discovery API, o sistema detecta automaticamente a presença do campo e usa os preços reais — sem nenhuma alteração de código necessária. O mock só é ativado como fallback quando o campo está ausente.
+
+---
+
+
 ## 📁 Estrutura do Projeto
 
 ```
-ElitePass/                 # Raiz = Frontend Next.js 
+ElitePass/                 # Raiz = Frontend Next.js
 ├── src/
 │   └── app/               # App Router do Next.js
 ├── public/                # Arquivos estáticos

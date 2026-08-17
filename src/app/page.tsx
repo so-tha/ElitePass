@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import {
   TMEvent,
@@ -28,6 +29,7 @@ function CardSkeleton() {
 
 
 export default function Home() {
+  const router = useRouter();
   const [events, setEvents] = useState<TMEvent[]>([]);
   const [featured, setFeatured] = useState<TMEvent | null>(null);
   const [search, setSearch] = useState("");
@@ -164,15 +166,13 @@ export default function Home() {
                       <p className={styles.priceLabel}>A partir de</p>
                       <p className={styles.priceValue}>{formatPrice(featured)}</p>
                     </div>
-                    <a
-                      href={featured.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
                       className={styles.btnEmbarcar}
                       id="btn-embarcar-destaque"
+                      onClick={() => router.push(`/events/${featured.id}`)}
                     >
-                      Confira
-                    </a>
+                      Comprar Ingresso
+                    </button>
                   </div>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export default function Home() {
                       key={event.id}
                       className={styles.showCard}
                       id={`card-show-${event.id}`}
-                      onClick={() => setFeatured(event)}
+                      onClick={() => router.push(`/events/${event.id}`)}
                       style={{ cursor: "pointer" }}
                     >
                       <div className={styles.cardImage}>
@@ -220,16 +220,13 @@ export default function Home() {
                         <p className={styles.cardVenue}>📍 {getVenue(event)}</p>
                         <div className={styles.cardFooter}>
                           <span className={styles.cardPrice}>{formatPrice(event)}</span>
-                          <a
-                            href={event.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
                             className={styles.btnCard}
                             id={`btn-confira-${event.id}`}
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); router.push(`/events/${event.id}`); }}
                           >
-                            Confira
-                          </a>
+                            Comprar
+                          </button>
                         </div>
                       </div>
                     </div>

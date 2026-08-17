@@ -71,14 +71,91 @@ export function getBestImage(images: TMImage[]): string {
   return images.sort((a, b) => b.width - a.width)[0].url;
 }
 
+// ─── Mock price generation ──────────────────────────────────────────────────
+//
+// A Ticketmaster Discovery API removeu `priceRanges` em mar/2025.
+// Para simulação de compra (portfolio / demo), geramos preços realistas
+// determinísticos — o mesmo evento sempre produz o mesmo preço.
+//
+export interface MockPriceRange {
+  min: number;
+  mid: number;
+  max: number;
+  currency: string;
+  isMock: true;
+}
+
+/**
+ * Gera um número pseudo-aleatório determinístico a partir de uma string seed.
+ * Garante que o mesmo evento sempre produza o mesmo preço entre renders.
+ */
+function seededRandom(seed: string): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0; // converte para int 32-bit
+  }
+  // normaliza para [0, 1)
+  return Math.abs(hash) / 2147483647;
+}
+
+/**
+ * Retorna faixas de preço simuladas em BRL baseadas na categoria do evento.
+ * Os valores refletem o mercado brasileiro de shows e eventos.
+ */
+export function generateMockPrices(event: TMEvent): MockPriceRange {
+  const segment = event.classifications?.[0]?.segment?.name?.toLowerCase() ?? "";
+  const genre   = event.classifications?.[0]?.genre?.name?.toLowerCase() ?? "";
+  const seed    = event.id;
+  const rand    = seededRandom(seed); // [0, 1)
+
+  // Tabela de faixas de base por segmento/gênero (valores em BRL)
+  let baseMin = 80;
+  let baseMax = 350;
+
+  if (segment.includes("music") || segment.includes("música")) {
+    if (genre.includes("pop") || genre.includes("rock"))  { baseMin = 120; baseMax = 500; }
+    else if (genre.includes("sertanejo") || genre.includes("country")) { baseMin = 80;  baseMax = 380; }
+    else if (genre.includes("eletrônica") || genre.includes("electronic")) { baseMin = 100; baseMax = 450; }
+    else if (genre.includes("jazz") || genre.includes("blues")) { baseMin = 60; baseMax = 220; }
+    else { baseMin = 100; baseMax = 400; }
+  } else if (segment.includes("sport")) {
+    baseMin = 50; baseMax = 300;
+  } else if (segment.includes("art") || segment.includes("theatre") || segment.includes("theater")) {
+    baseMin = 60; baseMax = 280;
+  } else if (segment.includes("film") || segment.includes("cinema")) {
+    baseMin = 40; baseMax = 150;
+  } else if (segment.includes("family")) {
+    baseMin = 60; baseMax = 250;
+  }
+
+  // Adiciona variação dentro da faixa usando seed do evento
+  const spread = baseMax - baseMin;
+  const min    = Math.round((baseMin + rand * spread * 0.35) / 5) * 5;   // Pista
+  const mid    = Math.round((baseMin + spread * 0.45 + rand * spread * 0.2) / 5) * 5; // Premium
+  const max    = Math.round((baseMin + spread * 0.7  + rand * spread * 0.3) / 5) * 5; // VIP
+
+  return { min, mid, max, currency: "BRL", isMock: true };
+}
+
 export function formatPrice(event: TMEvent): string {
-  if (!event.priceRanges?.length) return "Consultar";
-  const { min, currency } = event.priceRanges[0];
+  // Usa preço real da API se disponível
+  if (event.priceRanges?.length) {
+    const { min, currency } = event.priceRanges[0];
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(min);
+  }
+
+  // Fallback: preço simulado para fins de demonstração
+  const mock = generateMockPrices(event);
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency,
+    currency: mock.currency,
     maximumFractionDigits: 0,
-  }).format(min);
+  }).format(mock.min);
 }
 
 export function formatDate(localDate: string): string {
