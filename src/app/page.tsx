@@ -176,7 +176,7 @@ export default function Home() {
         {/* ───── BUSCA ───── */}
         <section className={styles.searchSection}>
           <h1 className={styles.searchHeading}>
-            Encontre seu próximo <span className={styles.highlight}>show</span>
+            Encontre seu próximo <span className={styles.highlight}>evento</span>
           </h1>
           <div className={styles.searchBar}>
             <input
