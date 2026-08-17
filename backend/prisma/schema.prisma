@@ -1,7 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// ============================================================
+// ElitePass — Prisma Schema
+// Models: User, Order, Ticket
+// ============================================================
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +10,90 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────
+
+enum Role {
+  CLIENT
+  ORGANIZER
+  DOORMAN
+}
+
+enum EventType {
+  SHOW
+  MOVIE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum TicketStatus {
+  VALID
+  USED
+  CANCELLED
+}
+
+// ─── Models ──────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  cpf       String   @unique
+  password  String   // bcrypt hash
+  role      Role     @default(CLIENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+
+  // Evento externo (Ticketmaster ou TMDB — ID e nome armazenados localmente)
+  eventId     String
+  eventType   EventType
+  eventName   String
+  eventDate   String?     // "YYYY-MM-DD" (pode ser nulo para filmes)
+  eventVenue  String?
+
+  // Tier e preços
+  tierId      String
+  tierLabel   String
+  priceUnit   Float
+  quantity    Int
+  fee         Float       // taxa de serviço cobrada (12%)
+  totalAmount Float
+
+  status      OrderStatus @default(CONFIRMED)
+  createdAt   DateTime    @default(now())
+
+  tickets     Ticket[]
+}
+
+model Ticket {
+  id          String       @id @default(uuid())
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id])
+
+  // Código legível e token de compartilhamento
+  code        String       @unique  // ex: "MIC-PI-20260817-432101"
+  qrData      String       // conteúdo encodado no QR Code (= code + hash)
+  shareToken  String       @unique @default(uuid())  // token público de compartilhamento
+
+  status      TicketStatus @default(VALID)
+  usedAt      DateTime?    // preenchido pela portaria ao validar
+
+  createdAt   DateTime     @default(now())
+
+  @@index([code])
+  @@index([shareToken])
 }
