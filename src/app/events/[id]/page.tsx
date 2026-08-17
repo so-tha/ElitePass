@@ -803,9 +803,6 @@ export default function EventPage() {
               <button id="btn-compartilhar" className={styles.btnContinue}>
                 🔗 Compartilhar Ingresso
               </button>
-              <button id="btn-baixar-pdf" className={styles.btnSecondary}>
-                📥 Baixar PDF
-              </button>
             </div>
 
             {/* Info boxes */}

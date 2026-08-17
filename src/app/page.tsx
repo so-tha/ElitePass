@@ -12,6 +12,13 @@ import {
   getVenue,
   getCategory,
 } from "@/lib/ticketmaster";
+import {
+  TMDBMovie,
+  tmdbPoster,
+  formatMoviePrice,
+  formatMovieDate,
+  GENRE_MAP,
+} from "@/lib/tmdb";
 
 function CardSkeleton() {
   return (
@@ -37,16 +44,36 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
+  const moviesRef = useRef<HTMLDivElement>(null);
 
-  const scroll = (direction: "left" | "right") => {
-    if (trackRef.current) {
-      const scrollAmount = 480;
-      trackRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
+  // Movies state
+  const [movies, setMovies] = useState<TMDBMovie[]>([]);
+  const [moviesLoading, setMoviesLoading] = useState(true);
+  const [moviesError, setMoviesError] = useState<string | null>(null);
+
+  const scroll = (ref: React.RefObject<HTMLDivElement | null>, direction: "left" | "right") => {
+    if (ref.current) {
+      ref.current.scrollBy({
+        left: direction === "left" ? -480 : 480,
         behavior: "smooth",
       });
     }
   };
+
+  const fetchMovies = useCallback(async () => {
+    setMoviesLoading(true);
+    setMoviesError(null);
+    try {
+      const res = await fetch("/api/movies");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro ao carregar filmes.");
+      setMovies(data.movies ?? []);
+    } catch (err) {
+      setMoviesError(err instanceof Error ? err.message : "Erro ao carregar filmes.");
+    } finally {
+      setMoviesLoading(false);
+    }
+  }, []);
 
   const fetchEvents = useCallback(async (keyword = "") => {
     setLoading(true);
@@ -72,7 +99,8 @@ export default function Home() {
 
   useEffect(() => {
     fetchEvents();
-  }, [fetchEvents]);
+    fetchMovies();
+  }, [fetchEvents, fetchMovies]);
 
   useEffect(() => {
     if (!search) {
@@ -92,10 +120,11 @@ export default function Home() {
           </a>
 
           <nav className={`${styles.navLinks} ${menuOpen ? styles.navOpen : ""}`}>
-            <a href="#" className={styles.navLink} id="nav-shows">Shows</a>
-            <a href="#" className={styles.navLink} id="nav-festivais">Festivais</a>
-            <a href="#" className={styles.navLink} id="nav-esportes">Esportes</a>
-            <a href="#" className={styles.navLink} id="nav-teatro">Teatro</a>
+            <a href="#shows" className={styles.navLink} id="nav-shows">Shows</a>
+            <a href="#filmes" className={styles.navLink} id="nav-filmes">Filmes</a>
+            <a href="#festivais" className={styles.navLink} id="nav-festivais">Festivais</a>
+            <a href="#esportes" className={styles.navLink} id="nav-esportes">Esportes</a>
+            <a href="#teatro" className={styles.navLink} id="nav-teatro">Teatro</a>
           </nav>
 
           <a href="#auth" className={styles.btnAuth} id="btn-entrar-cadastrar">
@@ -206,7 +235,7 @@ export default function Home() {
               <div className={styles.carouselWrapper}>
                 <button
                   className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
-                  onClick={() => scroll("left")}
+                  onClick={() => scroll(trackRef, "left")}
                   aria-label="Anterior"
                 >
                   ‹
@@ -253,7 +282,7 @@ export default function Home() {
                 </div>
                 <button
                   className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
-                  onClick={() => scroll("right")}
+                  onClick={() => scroll(trackRef, "right")}
                   aria-label="Próximo"
                 >
                   ›
@@ -262,6 +291,78 @@ export default function Home() {
             )}
           </section>
         )}
+        {/* ── MOVIES IN THEATRES ── */}
+        <section id="filmes" className={styles.showsSection}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>🎬 Filmes em Cartaz</h2>
+            {moviesLoading && <span className={styles.loadingDot}>Carregando...</span>}
+          </div>
+
+          {moviesError ? (
+            <p className={styles.noResults}>⚠️ {moviesError}</p>
+          ) : !moviesLoading && movies.length === 0 ? (
+            <p className={styles.noResults}>Nenhum filme encontrado.</p>
+          ) : (
+            <div className={styles.carouselWrapper}>
+              <button
+                className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
+                onClick={() => scroll(moviesRef, "left")}
+                aria-label="Ver filmes anteriores"
+              >
+                ‹
+              </button>
+              <div className={styles.showsTrack} ref={moviesRef}>
+                {moviesLoading
+                  ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                  : movies.map((movie) => (
+                    <div
+                      key={movie.id}
+                      className={styles.showCard}
+                      id={`card-movie-${movie.id}`}
+                      onClick={() => router.push(`/movies/${movie.id}`)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <div className={styles.cardImage}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={tmdbPoster(movie.poster_path)}
+                          alt={movie.title}
+                          className={styles.cardImg}
+                          loading="lazy"
+                        />
+                        <span className={styles.cardBadge}>
+                          {movie.genre_ids?.[0] ? (GENRE_MAP[movie.genre_ids[0]] ?? "Filme") : "Filme"}
+                        </span>
+                      </div>
+                      <div className={styles.cardBody}>
+                        <p className={styles.cardArtist}>⭐ {movie.vote_average.toFixed(1)}</p>
+                        <p className={styles.cardTitle}>{movie.title}</p>
+                        <p className={styles.cardDate}>📅 {formatMovieDate(movie.release_date)}</p>
+                        <p className={styles.cardVenue}>🎬 No cinema</p>
+                        <div className={styles.cardFooter}>
+                          <span className={styles.cardPrice}>{formatMoviePrice(movie)}</span>
+                          <button
+                            className={styles.btnCard}
+                            id={`btn-comprar-movie-${movie.id}`}
+                            onClick={(e) => { e.stopPropagation(); router.push(`/movies/${movie.id}`); }}
+                          >
+                            Comprar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+              <button
+                className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
+                onClick={() => scroll(moviesRef, "right")}
+                aria-label="Ver próximos filmes"
+              >
+                ›
+              </button>
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
