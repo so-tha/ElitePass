@@ -232,14 +232,74 @@ export default function EventPage() {
   const maskExpiry = (v: string) =>
     v.replace(/\D/g, "").replace(/(\d{2})(\d)/, "$1/$2").slice(0, 5);
 
+  // Validadores de CPF e Cartão (Algoritmo de Luhn e Módulo 11)
+  const isValidCPF = (cpf: string): boolean => {
+    const digits = cpf.replace(/\D/g, "");
+    if (digits.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(digits)) return false; // Rejeita 000.000.000-00, 111.111.111-11, etc.
+
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(digits.charAt(i), 10) * (10 - i);
+    }
+    let rev = (sum * 10) % 11;
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(digits.charAt(9), 10)) return false;
+
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += parseInt(digits.charAt(i), 10) * (11 - i);
+    }
+    rev = (sum * 10) % 11;
+    if (rev === 10 || rev === 11) rev = 0;
+    if (rev !== parseInt(digits.charAt(10), 10)) return false;
+
+    return true;
+  };
+
+  const isValidCreditCard = (card: string): boolean => {
+    const digits = card.replace(/\D/g, "");
+    if (digits.length < 13 || digits.length > 19) return false;
+    if (/^(\d)\1+$/.test(digits)) return false; // Rejeita 0000 0000 0000 0000, 1111... etc.
+
+    let sum = 0;
+    let shouldDouble = false;
+    for (let i = digits.length - 1; i >= 0; i--) {
+      let digit = parseInt(digits.charAt(i), 10);
+      if (shouldDouble) {
+        digit *= 2;
+        if (digit > 9) digit -= 9;
+      }
+      sum += digit;
+      shouldDouble = !shouldDouble;
+    }
+    return sum % 10 === 0;
+  };
+
+  const isValidExpiry = (expiry: string): boolean => {
+    if (!/^\d{2}\/\d{2}$/.test(expiry)) return false;
+    const [mStr, yStr] = expiry.split("/");
+    const month = parseInt(mStr, 10);
+    const year = 2000 + parseInt(yStr, 10);
+    if (month < 1 || month > 12) return false;
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    if (year < currentYear) return false;
+    if (year === currentYear && month < currentMonth) return false;
+    return true;
+  };
+
   const validate = () => {
     const errs: Partial<typeof form> = {};
-    if (!form.name.trim()) errs.name = "Nome obrigatório";
+    if (!form.name.trim() || form.name.trim().length < 3) errs.name = "Nome completo obrigatório";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "E-mail inválido";
-    if (form.cpf.replace(/\D/g, "").length < 11) errs.cpf = "CPF inválido";
-    if (form.card.replace(/\D/g, "").length < 16) errs.card = "Número do cartão inválido";
-    if (form.expiry.length < 5) errs.expiry = "Validade inválida";
-    if (form.cvv.length < 3) errs.cvv = "CVV inválido";
+    if (!isValidCPF(form.cpf)) errs.cpf = "CPF inválido (ex: 123.456.789-00)";
+    if (!isValidCreditCard(form.card)) errs.card = "Número de cartão inválido";
+    if (!isValidExpiry(form.expiry)) errs.expiry = "Validade inválida (MM/AA)";
+    if (form.cvv.replace(/\D/g, "").length < 3) errs.cvv = "CVV inválido (3 ou 4 dígitos)";
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
   };
