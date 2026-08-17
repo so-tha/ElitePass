@@ -187,6 +187,8 @@ export default function EventPage() {
   const [step, setStep] = useState(1); // 1=select, 2=checkout, 3=success
   const [menuOpen, setMenuOpen] = useState(false);
   const [mockPrices, setMockPrices] = useState(false);
+  const [orderCode,  setOrderCode]  = useState("");
+  const [ticketCode, setTicketCode] = useState("");
 
   // checkout form
   const [form, setForm] = useState({ name: "", email: "", cpf: "", card: "", expiry: "", cvv: "" });
@@ -246,6 +248,27 @@ export default function EventPage() {
     if (!validate()) return;
     setProcessing(true);
     await new Promise((r) => setTimeout(r, 2200));
+
+    // Gera códigos únicos para cada compra
+    const rand6 = () => Math.floor(100000 + Math.random() * 900000);
+    const now   = new Date();
+    const yy    = now.getFullYear();
+    const datePart = [
+      String(now.getFullYear()),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("");
+
+    const seq    = rand6();
+    const order  = `#ORD-${yy}-${seq}`;
+
+    // Prefixo do código: 3 letras do evento + 2 letras do tier
+    const evPrefix   = (event?.name ?? "EVT").replace(/\s+/g, "").toUpperCase().slice(0, 3);
+    const tierPrefix = (selectedTier?.label ?? "PI").replace(/\s+/g, "").toUpperCase().slice(0, 2);
+    const ticket = `${evPrefix}-${tierPrefix}-${datePart}-${seq}`;
+
+    setOrderCode(order);
+    setTicketCode(ticket);
     setProcessing(false);
     setStep(3);
   };
@@ -621,47 +644,133 @@ export default function EventPage() {
           </div>
         )}
 
-        {/* ── STEP 3 — SUCCESS ── */}
+        {/* ── STEP 3 — CONFIRMAÇÃO DO INGRESSO ── */}
         {step === 3 && (
-          <div className={styles.successPage}>
-            <div className={styles.successCard}>
-              <div className={styles.successBurst}>
-                <div className={styles.successIcon}>🎟️</div>
-              </div>
-              <h2 className={styles.successTitle}>Pedido confirmado!</h2>
-              <p className={styles.successSub}>
-                Seus ingressos foram enviados para <strong>{form.email}</strong>
-              </p>
+          <div className={styles.confirmPage}>
 
-              <div className={styles.ticketSummaryBox}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={heroImg} alt={event.name} className={styles.ticketImg} />
-                <div className={styles.ticketInfo}>
-                  <p className={styles.ticketCategory}>{category}</p>
-                  <p className={styles.ticketArtist}>{artist}</p>
-                  <p className={styles.ticketName}>{event.name}</p>
-                  <p className={styles.ticketMeta}>📅 {dateStr}{timeStr && ` · ${timeStr}`}</p>
-                  <p className={styles.ticketMeta}>📍 {venue}</p>
-                  <div className={styles.ticketDivider} />
-                  <div className={styles.ticketFooter}>
-                    <div>
-                      <p className={styles.ticketTierLabel}>{selectedTier?.label}</p>
-                      <p className={styles.ticketQty}>{qty} {qty === 1 ? "ingresso" : "ingressos"}</p>
-                    </div>
-                    <p className={styles.ticketTotal}>{formatCurrency(grandTotal, selectedTier!.currency)}</p>
-                  </div>
+            {/* Checkmark animado */}
+            <div className={styles.confirmCheck}>
+              <svg viewBox="0 0 52 52" className={styles.checkSvg}>
+                <circle cx="26" cy="26" r="25" fill="none" className={styles.checkCircle} />
+                <path d="M14 27l9 9 16-18" fill="none" className={styles.checkMark} />
+              </svg>
+            </div>
+            <h2 className={styles.confirmTitle}>Compra Confirmada!</h2>
+            <p className={styles.confirmSub}>
+              Seu ingresso está pronto. Verifique seu e-mail para mais detalhes.
+            </p>
+
+            {/* Card do ingresso */}
+            <div className={styles.ticketCard}>
+
+              {/* Cabeçalho */}
+              <div className={styles.tcHeader}>
+                <div>
+                  <p className={styles.tcOrderLabel}>Número do Pedido</p>
+                  <p className={styles.tcOrderNumber}>{orderCode}</p>
+                </div>
+                <span className={styles.tcBadge}>Confirmado ✓</span>
+              </div>
+
+              <div className={styles.tcDividerDash} />
+
+              {/* Evento */}
+              <div className={styles.tcSection}>
+                <p className={styles.tcLabel}>Evento</p>
+                <p className={styles.tcEventName}>{event.name}</p>
+              </div>
+
+              <div className={styles.tcRow}>
+                <div>
+                  <p className={styles.tcLabel}>Tipo de Ingresso</p>
+                  <p className={styles.tcValue}>{selectedTier?.label}</p>
+                </div>
+                <div>
+                  <p className={styles.tcLabel}>Quantidade</p>
+                  <p className={styles.tcValue}>{qty}x</p>
                 </div>
               </div>
 
-              <div className={styles.successActions}>
-                <button id="btn-novo-evento" className={styles.btnContinue} onClick={() => router.push("/")}>
-                  Explorar mais eventos
-                </button>
-                <button id="btn-baixar-ingresso" className={styles.btnSecondary}>
-                  📥 Baixar ingresso (PDF)
-                </button>
+              <div className={styles.tcDividerDash} />
+
+              {/* QR Code */}
+              <div className={styles.tcQrSection}>
+                <p className={styles.tcLabel}>Código do Ingresso</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=8&color=000000&bgcolor=ffffff&data=${encodeURIComponent(ticketCode)}`}
+                  alt="QR Code do ingresso"
+                  className={styles.tcQrImg}
+                  width={160}
+                  height={160}
+                />
+                <p className={styles.tcTicketCode}>{ticketCode}</p>
+                <p className={styles.tcQrHint}>Apresente este código na entrada</p>
+              </div>
+
+              <div className={styles.tcDividerDash} />
+
+              {/* Detalhes */}
+              <div className={styles.tcMeta}>
+                <div className={styles.tcMetaRow}>
+                  <span className={styles.tcMetaLabel}>📅 Data do Evento</span>
+                  <span className={styles.tcMetaValue}>{dateStr}{timeStr && ` – ${timeStr}`}</span>
+                </div>
+                <div className={styles.tcMetaRow}>
+                  <span className={styles.tcMetaLabel}>📍 Local</span>
+                  <span className={styles.tcMetaValue}>{venue}</span>
+                </div>
+                <div className={styles.tcMetaRow}>
+                  <span className={styles.tcMetaLabel}>📧 E-mail de Confirmação</span>
+                  <span className={styles.tcMetaValue}>{form.email}</span>
+                </div>
+              </div>
+
+              <div className={styles.tcDividerDash} />
+
+              {/* Total */}
+              <div className={styles.tcTotalRow}>
+                <span className={styles.tcTotalLabel}>Total Pago</span>
+                <span className={styles.tcTotalValue}>{formatCurrency(grandTotal, selectedTier!.currency)}</span>
               </div>
             </div>
+
+            {/* Ações */}
+            <div className={styles.confirmActions}>
+              <button id="btn-compartilhar" className={styles.btnContinue}>
+                🔗 Compartilhar Ingresso
+              </button>
+              <button id="btn-baixar-pdf" className={styles.btnSecondary}>
+                📥 Baixar PDF
+              </button>
+            </div>
+
+            {/* Info boxes */}
+            <div className={styles.infoBoxes}>
+              <div className={styles.infoBox}>
+                <span className={styles.infoIcon}>⏰</span>
+                <div>
+                  <p className={styles.infoTitle}>Chegue cedo</p>
+                  <p className={styles.infoDesc}>Recomendamos chegar 30 min antes do início</p>
+                </div>
+              </div>
+              <div className={styles.infoBox}>
+                <span className={styles.infoIcon}>🔒</span>
+                <div>
+                  <p className={styles.infoTitle}>Sua segurança</p>
+                  <p className={styles.infoDesc}>Ingresso válido com identificação obrigatória</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              id="btn-continuar-comprando"
+              className={styles.linkContinue}
+              onClick={() => router.push("/")}
+            >
+              Continuar comprando ingressos →
+            </button>
+
           </div>
         )}
       </main>

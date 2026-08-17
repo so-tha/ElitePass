@@ -946,7 +946,328 @@
   width: 100%;
 }
 
+/* ════════════════════════════════════════════════════════════
+   TICKET CONFIRMATION PAGE (Step 3)
+   ════════════════════════════════════════════════════════════ */
+
+.confirmPage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 8px 0 56px;
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Animated checkmark ── */
+@keyframes checkCircleDraw {
+  from { stroke-dashoffset: 166; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes checkMarkDraw {
+  from { stroke-dashoffset: 48; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes checkFadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.confirmCheck {
+  animation: checkFadeIn 0.4s ease forwards;
+}
+
+.checkSvg {
+  width: 72px;
+  height: 72px;
+  display: block;
+}
+
+.checkCircle {
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-linecap: round;
+  animation: checkCircleDraw 0.6s cubic-bezier(0.65, 0, 0.45, 1) 0.1s forwards;
+}
+
+.checkMark {
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: checkMarkDraw 0.3s ease 0.6s forwards;
+}
+
+.confirmTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.5px;
+  text-align: center;
+}
+
+.confirmSub {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin-top: -8px;
+}
+
+/* ── Ticket Card ── */
+.ticketCard {
+  width: 100%;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.tcHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+}
+
+.tcOrderLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.tcOrderNumber {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: -0.3px;
+  font-family: var(--font-display);
+}
+
+.tcBadge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* dashed divider like a real ticket perforation */
+.tcDividerDash {
+  height: 1px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--color-border) 0,
+    var(--color-border) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  margin: 0 24px;
+  position: relative;
+}
+
+.tcDividerDash::before,
+.tcDividerDash::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  background: var(--color-bg);
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+}
+.tcDividerDash::before { left: -34px; }
+.tcDividerDash::after  { right: -34px; }
+
+.tcSection {
+  padding: 16px 24px 8px;
+}
+
+.tcRow {
+  display: flex;
+  gap: 32px;
+  padding: 8px 24px 16px;
+}
+
+.tcLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.tcEventName {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.tcValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ── QR Code section ── */
+.tcQrSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  background: rgba(255, 178, 44, 0.03);
+}
+
+.tcQrImg {
+  border-radius: var(--radius-md);
+  border: 3px solid #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  display: block;
+}
+
+.tcTicketCode {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+  font-family: monospace;
+  text-transform: uppercase;
+}
+
+.tcQrHint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* ── Meta rows ── */
+.tcMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 24px;
+}
+
+.tcMetaRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.tcMetaLabel {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.tcMetaValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: right;
+  word-break: break-all;
+}
+
+/* ── Total row ── */
+.tcTotalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(255, 178, 44, 0.05);
+}
+
+.tcTotalLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.tcTotalValue {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: -0.5px;
+}
+
+/* ── Confirm actions ── */
+.confirmActions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.confirmActions .btnContinue,
+.confirmActions .btnSecondary {
+  flex: 1;
+}
+
+/* ── Info boxes ── */
+.infoBoxes {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.infoBox {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.infoIcon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+
+.infoTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.infoDesc {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* ── Link button ── */
+.linkContinue {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: opacity var(--transition);
+}
+
+.linkContinue:hover { opacity: 0.75; }
+
 /* ── RESPONSIVE ── */
+
 @media (max-width: 900px) {
   .main { padding: 24px 16px 64px; gap: 28px; }
   .layout { grid-template-columns: 1fr; }
