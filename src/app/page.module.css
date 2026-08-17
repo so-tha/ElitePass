@@ -235,43 +235,67 @@
   color: var(--color-text);
 }
 
-.seeAll {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-primary);
-  transition: opacity var(--transition);
-}
-
-.seeAll:hover {
-  opacity: 0.75;
-}
-
 .noResults {
   color: var(--color-text-muted);
   font-size: 15px;
   padding: 32px 0;
 }
 
+.carouselWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.sideNavBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  font-size: 24px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  transition: all var(--transition);
+  backdrop-filter: blur(8px);
+}
+
+.sideNavBtn:hover {
+  background: var(--color-primary);
+  color: #000;
+  box-shadow: 0 0 20px var(--color-primary-glow);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.sideNavLeft {
+  left: -20px;
+}
+
+.sideNavRight {
+  right: -20px;
+}
+
 .showsTrack {
   display: flex;
   gap: 16px;
   overflow-x: auto;
-  padding-bottom: 12px;
+  padding: 4px 4px 12px 4px;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 .showsTrack::-webkit-scrollbar {
-  height: 4px;
-}
-
-.showsTrack::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.showsTrack::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 4px;
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .showCard {
@@ -553,10 +577,13 @@
   .showCard { flex: 0 0 180px; }
   .cardImage { height: 200px; }
   .featuredContent { padding: 28px 24px; }
+  .sideNavLeft { left: -8px; }
+  .sideNavRight { right: -8px; }
 }
 
 @media (max-width: 480px) {
   .featuredCard { min-height: 360px; }
   .featuredFooter { flex-direction: column; align-items: flex-start; gap: 16px; }
   .btnEmbarcar { width: 100%; text-align: center; }
+  .sideNavBtn { display: none; }
 }

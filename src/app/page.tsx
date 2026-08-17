@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import {
@@ -36,6 +36,17 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    if (trackRef.current) {
+      const scrollAmount = 480;
+      trackRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
 
   const fetchEvents = useCallback(async (keyword = "") => {
     setLoading(true);
@@ -192,45 +203,61 @@ export default function Home() {
             {!loading && events.length === 0 ? (
               <p className={styles.noResults}>Nenhum show encontrado para essa busca.</p>
             ) : (
-              <div className={styles.showsTrack}>
-                {loading
-                  ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-                  : events.map((event) => (
-                    <div
-                      key={event.id}
-                      className={styles.showCard}
-                      id={`card-show-${event.id}`}
-                      onClick={() => router.push(`/events/${event.id}`)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <div className={styles.cardImage}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={getBestImage(event.images)}
-                          alt={event.name}
-                          className={styles.cardImg}
-                          loading="lazy"
-                        />
-                        <span className={styles.cardBadge}>{getCategory(event)}</span>
-                      </div>
-                      <div className={styles.cardBody}>
-                        <p className={styles.cardArtist}>{getArtistName(event)}</p>
-                        <p className={styles.cardTitle}>{event.name}</p>
-                        <p className={styles.cardDate}>📅 {formatDate(event.dates.start.localDate)}</p>
-                        <p className={styles.cardVenue}>📍 {getVenue(event)}</p>
-                        <div className={styles.cardFooter}>
-                          <span className={styles.cardPrice}>{formatPrice(event)}</span>
-                          <button
-                            className={styles.btnCard}
-                            id={`btn-confira-${event.id}`}
-                            onClick={(e) => { e.stopPropagation(); router.push(`/events/${event.id}`); }}
-                          >
-                            Comprar
-                          </button>
+              <div className={styles.carouselWrapper}>
+                <button
+                  className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
+                  onClick={() => scroll("left")}
+                  aria-label="Anterior"
+                >
+                  ‹
+                </button>
+                <div className={styles.showsTrack} ref={trackRef}>
+                  {loading
+                    ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                    : events.map((event) => (
+                      <div
+                        key={event.id}
+                        className={styles.showCard}
+                        id={`card-show-${event.id}`}
+                        onClick={() => router.push(`/events/${event.id}`)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <div className={styles.cardImage}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={getBestImage(event.images)}
+                            alt={event.name}
+                            className={styles.cardImg}
+                            loading="lazy"
+                          />
+                          <span className={styles.cardBadge}>{getCategory(event)}</span>
+                        </div>
+                        <div className={styles.cardBody}>
+                          <p className={styles.cardArtist}>{getArtistName(event)}</p>
+                          <p className={styles.cardTitle}>{event.name}</p>
+                          <p className={styles.cardDate}>📅 {formatDate(event.dates.start.localDate)}</p>
+                          <p className={styles.cardVenue}>📍 {getVenue(event)}</p>
+                          <div className={styles.cardFooter}>
+                            <span className={styles.cardPrice}>{formatPrice(event)}</span>
+                            <button
+                              className={styles.btnCard}
+                              id={`btn-confira-${event.id}`}
+                              onClick={(e) => { e.stopPropagation(); router.push(`/events/${event.id}`); }}
+                            >
+                              Comprar
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
+                <button
+                  className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
+                  onClick={() => scroll("right")}
+                  aria-label="Próximo"
+                >
+                  ›
+                </button>
               </div>
             )}
           </section>
