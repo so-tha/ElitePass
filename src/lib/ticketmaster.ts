@@ -174,7 +174,13 @@ export function getArtistName(event: TMEvent): string {
 export function getVenue(event: TMEvent): string {
   const venue = event._embedded?.venues?.[0];
   if (!venue) return "Local a confirmar";
-  return `${venue.name}${venue.city ? `, ${venue.city.name}` : ""}`;
+
+  const venueName = venue.name && venue.name !== "undefined" ? venue.name : "Local a confirmar";
+  const cityName = venue.city?.name && venue.city.name !== "undefined" ? venue.city.name : null;
+  const stateName = venue.state?.name && venue.state.name !== "undefined" ? venue.state.name : null;
+
+  const location = cityName || stateName;
+  return location ? `${venueName}, ${location}` : venueName;
 }
 
 export function getCategory(event: TMEvent): string {
