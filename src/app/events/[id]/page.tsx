@@ -329,31 +329,34 @@ export default function EventPage() {
       </header>
 
       <main className={styles.main}>
-        {/* ── BACK ── */}
-        <button className={styles.backBtn} id="btn-voltar" onClick={() => router.push("/")}>
-          <span className={styles.backArrow}>←</span> Todos os eventos
-        </button>
+        {/* ── BACK & HERO (apenas no Step 1 - Escolha de Ingresso) ── */}
+        {step === 1 && (
+          <>
+            <button className={styles.backBtn} id="btn-voltar" onClick={() => router.push("/")}>
+              <span className={styles.backArrow}>←</span> Todos os eventos
+            </button>
 
-        {/* ── HERO ── */}
-        <section className={styles.hero}>
-          <div className={styles.heroBg} style={{ backgroundImage: `url(${heroImg})` }} />
-          <div className={styles.heroOverlay} />
-          <div className={styles.heroContent}>
-            <span className={styles.heroBadge}>{category}</span>
-            <p className={styles.heroArtist}>{artist}</p>
-            <h1 className={styles.heroTitle}>{event.name}</h1>
-            <div className={styles.heroMeta}>
-              <span className={styles.heroMetaItem}>
-                <span className={styles.metaIcon}>📅</span>
-                {dateStr}{timeStr && ` · ${timeStr}`}
-              </span>
-              <span className={styles.heroMetaItem}>
-                <span className={styles.metaIcon}>📍</span>
-                {venue}
-              </span>
-            </div>
-          </div>
-        </section>
+            <section className={styles.hero}>
+              <div className={styles.heroBg} style={{ backgroundImage: `url(${heroImg})` }} />
+              <div className={styles.heroOverlay} />
+              <div className={styles.heroContent}>
+                <span className={styles.heroBadge}>{category}</span>
+                <p className={styles.heroArtist}>{artist}</p>
+                <h1 className={styles.heroTitle}>{event.name}</h1>
+                <div className={styles.heroMeta}>
+                  <span className={styles.heroMetaItem}>
+                    <span className={styles.metaIcon}>📅</span>
+                    {dateStr}{timeStr && ` · ${timeStr}`}
+                  </span>
+                  <span className={styles.heroMetaItem}>
+                    <span className={styles.metaIcon}>📍</span>
+                    {venue}
+                  </span>
+                </div>
+              </div>
+            </section>
+          </>
+        )}
 
         {/* ── STEPS ── */}
         {step < 3 && (
