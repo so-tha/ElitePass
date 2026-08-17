@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import {
@@ -50,6 +50,36 @@ export default function Home() {
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [moviesLoading, setMoviesLoading] = useState(true);
   const [moviesError, setMoviesError] = useState<string | null>(null);
+
+  // Hero carousel state
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [heroPaused, setHeroPaused] = useState(false);
+  const heroTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  type HeroItem =
+    | { type: "event"; data: TMEvent }
+    | { type: "movie"; data: TMDBMovie };
+
+  const heroItems = useMemo<HeroItem[]>(() => {
+    const eventItems: HeroItem[] = events.slice(0, 5).map(e => ({ type: "event", data: e }));
+    const movieItems: HeroItem[] = movies.slice(0, 5).map(m => ({ type: "movie", data: m }));
+    // Interleave: event, movie, event, movie...
+    const result: HeroItem[] = [];
+    const len = Math.max(eventItems.length, movieItems.length);
+    for (let i = 0; i < len; i++) {
+      if (eventItems[i]) result.push(eventItems[i]);
+      if (movieItems[i]) result.push(movieItems[i]);
+    }
+    return result.slice(0, 8);
+  }, [events, movies]);
+
+  useEffect(() => {
+    if (heroItems.length <= 1 || heroPaused) return;
+    heroTimerRef.current = setInterval(() => {
+      setHeroIndex(i => (i + 1) % heroItems.length);
+    }, 5000);
+    return () => { if (heroTimerRef.current) clearInterval(heroTimerRef.current); };
+  }, [heroItems.length, heroPaused]);
 
   const scroll = (ref: React.RefObject<HTMLDivElement | null>, direction: "left" | "right") => {
     if (ref.current) {
@@ -177,48 +207,96 @@ export default function Home() {
           </div>
         )}
 
-        {!error && (
-          <section className={styles.featuredSection}>
-            <h2 className={styles.sectionTitle}>Show em Destaque</h2>
+        {/* ── HERO CAROUSEL ── */}
+        <section
+          className={styles.heroCarousel}
+          onMouseEnter={() => setHeroPaused(true)}
+          onMouseLeave={() => setHeroPaused(false)}
+        >
+          {loading && moviesLoading ? (
+            <div className={`${styles.heroSlide} ${styles.skeleton}`} />
+          ) : heroItems.length === 0 ? null : (
+            <>
+              {heroItems.map((item, idx) => {
+                const isEvent = item.type === "event";
+                const ev = isEvent ? (item.data as TMEvent) : null;
+                const mv = !isEvent ? (item.data as TMDBMovie) : null;
 
-            {loading || !featured ? (
-              <div className={`${styles.featuredCard} ${styles.skeleton}`} style={{ minHeight: 420 }} />
-            ) : (
-              <div className={styles.featuredCard}>
-                <div
-                  className={styles.featuredBg}
-                  style={{ backgroundImage: `url(${getBestImage(featured.images)})` }}
-                />
-                <div className={styles.featuredOverlay} />
+                const imgUrl = isEvent
+                  ? getBestImage(ev!.images)
+                  : `https://image.tmdb.org/t/p/w1280${mv!.backdrop_path ?? mv!.poster_path ?? ""}`;
+                const badge  = isEvent ? getCategory(ev!) : (GENRE_MAP[mv!.genre_ids?.[0]] ?? "Filme");
+                const artist = isEvent ? getArtistName(ev!) : "";
+                const title  = isEvent ? ev!.name : mv!.title;
+                const meta1  = isEvent
+                  ? `📅 ${formatDate(ev!.dates.start.localDate)}`
+                  : `⭐ ${mv!.vote_average.toFixed(1)} · ${mv!.vote_count.toLocaleString()} avaliações`;
+                const meta2  = isEvent ? `📍 ${getVenue(ev!)}` : `📅 ${formatMovieDate(mv!.release_date)}`;
+                const price  = isEvent ? formatPrice(ev!) : formatMoviePrice(mv!);
+                const href   = isEvent ? `/events/${ev!.id}` : `/movies/${mv!.id}`;
+                const typeLabel = isEvent ? "🎵 Show" : "🎬 Filme";
 
-                <div className={styles.featuredContent}>
-                  <span className={styles.featuredBadge}>{getCategory(featured)}</span>
-                  <p className={styles.featuredArtist}>{getArtistName(featured)}</p>
-                  <h3 className={styles.featuredTitle}>{featured.name}</h3>
-
-                  <div className={styles.featuredMeta}>
-                    <span>📅 {formatDate(featured.dates.start.localDate)}</span>
-                    <span>📍 {getVenue(featured)}</span>
-                  </div>
-
-                  <div className={styles.featuredFooter}>
-                    <div>
-                      <p className={styles.priceLabel}>A partir de</p>
-                      <p className={styles.priceValue}>{formatPrice(featured)}</p>
+                return (
+                  <div
+                    key={idx}
+                    className={`${styles.heroSlide} ${idx === heroIndex ? styles.heroSlideActive : ""}`}
+                    aria-hidden={idx !== heroIndex}
+                  >
+                    <div className={styles.heroSlideBg} style={{ backgroundImage: `url(${imgUrl})` }} />
+                    <div className={styles.heroSlideOverlay} />
+                    <div className={styles.heroSlideContent}>
+                      <div className={styles.heroSlideType}>{typeLabel}</div>
+                      <span className={styles.featuredBadge}>{badge}</span>
+                      {artist && <p className={styles.featuredArtist}>{artist}</p>}
+                      <h2 className={styles.featuredTitle}>{title}</h2>
+                      <div className={styles.featuredMeta}>
+                        <span>{meta1}</span>
+                        <span>{meta2}</span>
+                      </div>
+                      <div className={styles.featuredFooter}>
+                        <div>
+                          <p className={styles.priceLabel}>A partir de</p>
+                          <p className={styles.priceValue}>{price}</p>
+                        </div>
+                        <button
+                          className={styles.btnEmbarcar}
+                          id={`btn-hero-${idx}`}
+                          onClick={() => router.push(href)}
+                        >
+                          Comprar Ingresso
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      className={styles.btnEmbarcar}
-                      id="btn-embarcar-destaque"
-                      onClick={() => router.push(`/events/${featured.id}`)}
-                    >
-                      Comprar Ingresso
-                    </button>
                   </div>
-                </div>
+                );
+              })}
+
+              {/* Dot indicators */}
+              <div className={styles.heroDots}>
+                {heroItems.map((_, idx) => (
+                  <button
+                    key={idx}
+                    className={`${styles.heroDot} ${idx === heroIndex ? styles.heroDotActive : ""}`}
+                    onClick={() => { setHeroIndex(idx); setHeroPaused(true); setTimeout(() => setHeroPaused(false), 8000); }}
+                    aria-label={`Slide ${idx + 1}`}
+                  />
+                ))}
               </div>
-            )}
-          </section>
-        )}
+
+              {/* Arrow controls */}
+              <button
+                className={`${styles.heroArrow} ${styles.heroArrowLeft}`}
+                onClick={() => { setHeroIndex(i => (i - 1 + heroItems.length) % heroItems.length); }}
+                aria-label="Anterior"
+              >‹</button>
+              <button
+                className={`${styles.heroArrow} ${styles.heroArrowRight}`}
+                onClick={() => { setHeroIndex(i => (i + 1) % heroItems.length); }}
+                aria-label="Próximo"
+              >›</button>
+            </>
+          )}
+        </section>
 
         {!error && (
           <section className={styles.showsSection}>
