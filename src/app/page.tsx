@@ -62,6 +62,36 @@ export default function Home() {
   const [moviesLoading, setMoviesLoading] = useState(true);
   const [moviesError, setMoviesError] = useState<string | null>(null);
 
+  const [sliderScroll, setSliderScroll] = useState({ canLeft: false, canRight: false });
+  const [showsScroll, setShowsScroll] = useState({ canLeft: false, canRight: false });
+  const [moviesScroll, setMoviesScroll] = useState({ canLeft: false, canRight: false });
+
+  const checkScroll = useCallback((
+    ref: React.RefObject<HTMLDivElement | null>,
+    setter: React.Dispatch<React.SetStateAction<{ canLeft: boolean; canRight: boolean }>>
+  ) => {
+    if (ref.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = ref.current;
+      const canLeft = scrollLeft > 10;
+      const canRight = scrollLeft + clientWidth < scrollWidth - 10;
+      setter({ canLeft, canRight });
+    }
+  }, []);
+
+  const scroll = (
+    ref: React.RefObject<HTMLDivElement | null>,
+    direction: "left" | "right",
+    setter: React.Dispatch<React.SetStateAction<{ canLeft: boolean; canRight: boolean }>>
+  ) => {
+    if (ref.current) {
+      ref.current.scrollBy({
+        left: direction === "left" ? -480 : 480,
+        behavior: "smooth",
+      });
+      setTimeout(() => checkScroll(ref, setter), 350);
+    }
+  };
+
   type FeaturedItem =
     | { type: "event"; data: TMEvent }
     | { type: "movie"; data: TMDBMovie };
@@ -77,15 +107,6 @@ export default function Home() {
     }
     return result.slice(0, 10);
   }, [events, movies]);
-
-  const scroll = (ref: React.RefObject<HTMLDivElement | null>, direction: "left" | "right") => {
-    if (ref.current) {
-      ref.current.scrollBy({
-        left: direction === "left" ? -480 : 480,
-        behavior: "smooth",
-      });
-    }
-  };
 
   const fetchMovies = useCallback(async () => {
     setMoviesLoading(true);
@@ -136,6 +157,21 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [search, fetchEvents]);
 
+  useEffect(() => {
+    const updateAll = () => {
+      checkScroll(sliderRef, setSliderScroll);
+      checkScroll(trackRef, setShowsScroll);
+      checkScroll(moviesRef, setMoviesScroll);
+    };
+    updateAll();
+    const timer = setTimeout(updateAll, 300);
+    window.addEventListener("resize", updateAll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", updateAll);
+    };
+  }, [events, movies, checkScroll]);
+
   return (
     <div className={styles.root}>
       <Navbar />
@@ -176,7 +212,6 @@ export default function Home() {
           </div>
         )}
 
-        
         <section className={styles.cardSliderSection}>
           <div className={styles.sliderHeader}>
             <h2 className={styles.sliderTitle}>Destaques em Cartaz</h2>
@@ -184,14 +219,21 @@ export default function Home() {
           </div>
 
           <div className={styles.sliderWrapper}>
-            <button
-              className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
-              onClick={() => scroll(sliderRef, "left")}
-              aria-label="Anterior"
+            {sliderScroll.canLeft && (
+              <button
+                className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
+                onClick={() => scroll(sliderRef, "left", setSliderScroll)}
+                aria-label="Anterior"
+              >
+                <ChevronLeftIcon size={22} />
+              </button>
+            )}
+
+            <div
+              className={styles.sliderTrack}
+              ref={sliderRef}
+              onScroll={() => checkScroll(sliderRef, setSliderScroll)}
             >
-              <ChevronLeftIcon size={22} />
-            </button>
-            <div className={styles.sliderTrack} ref={sliderRef}>
               {loading && moviesLoading
                 ? Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className={`${styles.sliderCard} ${styles.skeleton}`} />
@@ -256,13 +298,16 @@ export default function Home() {
                     );
                   })}
             </div>
-            <button
-              className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
-              onClick={() => scroll(sliderRef, "right")}
-              aria-label="Próximo"
-            >
-              <ChevronRightIcon size={22} />
-            </button>
+
+            {sliderScroll.canRight && (
+              <button
+                className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
+                onClick={() => scroll(sliderRef, "right", setSliderScroll)}
+                aria-label="Próximo"
+              >
+                <ChevronRightIcon size={22} />
+              </button>
+            )}
           </div>
         </section>
 
@@ -279,14 +324,21 @@ export default function Home() {
               <p className={styles.noResults}>Nenhum show encontrado para essa busca.</p>
             ) : (
               <div className={styles.carouselWrapper}>
-                <button
-                  className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
-                  onClick={() => scroll(trackRef, "left")}
-                  aria-label="Anterior"
+                {showsScroll.canLeft && (
+                  <button
+                    className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
+                    onClick={() => scroll(trackRef, "left", setShowsScroll)}
+                    aria-label="Anterior"
+                  >
+                    <ChevronLeftIcon size={22} />
+                  </button>
+                )}
+
+                <div
+                  className={styles.showsTrack}
+                  ref={trackRef}
+                  onScroll={() => checkScroll(trackRef, setShowsScroll)}
                 >
-                  <ChevronLeftIcon size={22} />
-                </button>
-                <div className={styles.showsTrack} ref={trackRef}>
                   {loading
                     ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
                     : events.map((event) => (
@@ -328,13 +380,16 @@ export default function Home() {
                         </div>
                       ))}
                 </div>
-                <button
-                  className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
-                  onClick={() => scroll(trackRef, "right")}
-                  aria-label="Próximo"
-                >
-                  <ChevronRightIcon size={22} />
-                </button>
+
+                {showsScroll.canRight && (
+                  <button
+                    className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
+                    onClick={() => scroll(trackRef, "right", setShowsScroll)}
+                    aria-label="Próximo"
+                  >
+                    <ChevronRightIcon size={22} />
+                  </button>
+                )}
               </div>
             )}
           </section>
@@ -352,14 +407,21 @@ export default function Home() {
             <p className={styles.noResults}>Nenhum filme encontrado.</p>
           ) : (
             <div className={styles.carouselWrapper}>
-              <button
-                className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
-                onClick={() => scroll(moviesRef, "left")}
-                aria-label="Ver filmes anteriores"
+              {moviesScroll.canLeft && (
+                <button
+                  className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
+                  onClick={() => scroll(moviesRef, "left", setMoviesScroll)}
+                  aria-label="Ver filmes anteriores"
+                >
+                  <ChevronLeftIcon size={22} />
+                </button>
+              )}
+
+              <div
+                className={styles.showsTrack}
+                ref={moviesRef}
+                onScroll={() => checkScroll(moviesRef, setMoviesScroll)}
               >
-                <ChevronLeftIcon size={22} />
-              </button>
-              <div className={styles.showsTrack} ref={moviesRef}>
                 {moviesLoading
                   ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
                   : movies.map((movie) => (
@@ -403,13 +465,16 @@ export default function Home() {
                       </div>
                     ))}
               </div>
-              <button
-                className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
-                onClick={() => scroll(moviesRef, "right")}
-                aria-label="Ver próximos filmes"
-              >
-                <ChevronRightIcon size={22} />
-              </button>
+
+              {moviesScroll.canRight && (
+                <button
+                  className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
+                  onClick={() => scroll(moviesRef, "right", setMoviesScroll)}
+                  aria-label="Ver próximos filmes"
+                >
+                  <ChevronRightIcon size={22} />
+                </button>
+              )}
             </div>
           )}
         </section>
