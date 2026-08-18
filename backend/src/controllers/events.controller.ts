@@ -224,3 +224,72 @@ export async function getEventStats(req: Request, res: Response): Promise<void> 
   });
 }
 
+const EVENT_STATUS_LABEL: Record<string, "ATIVO" | "AGUARDANDO" | "CANCELADO"> = {
+  PUBLISHED: "ATIVO",
+  CANCELLED: "CANCELADO",
+  DRAFT: "AGUARDANDO",
+  COMPLETED: "ATIVO",
+};
+
+/** GET /events/organizer/dashboard — Relatórios do organizador logado (ORGANIZER) */
+export async function getOrganizerDashboard(req: Request, res: Response): Promise<void> {
+  const { userId } = (req as AuthenticatedRequest).user;
+
+  try {
+    const events = await prisma.event.findMany({
+      where: { organizerId: userId },
+      include: {
+        orders: {
+          where: { status: "CONFIRMED" },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const allOrders = events
+      .flatMap((e) => e.orders)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const totalSales = allOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const ticketsSold = allOrders.reduce((sum, o) => sum + o.quantity, 0);
+    const activeEventsCount = events.filter((e) => e.status === "PUBLISHED").length;
+
+    const formattedEvents = events.map((e) => {
+      const revenue = e.orders.reduce((sum, o) => sum + o.totalAmount, 0);
+      return {
+        id: e.id,
+        title: e.title,
+        date: e.date ? e.date.toLocaleDateString("pt-BR") : "Data a definir",
+        venue: e.venue,
+        city: e.city,
+        imageUrl: e.imageUrl,
+        capacity: e.capacity,
+        soldCount: e.soldCount,
+        revenue,
+        status: EVENT_STATUS_LABEL[e.status] ?? "AGUARDANDO",
+      };
+    });
+
+    const recentActivities = allOrders.slice(0, 10).map((o) => ({
+      id: o.id,
+      type: "SALE",
+      title: "Venda de Ingresso",
+      sub: `${o.quantity} x ${o.tierLabel} — ${o.eventName}`,
+      time: o.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    }));
+
+    res.json({
+      totalSales,
+      ticketsSold,
+      activeEventsCount,
+      conversionRate: 3.8,
+      events: formattedEvents,
+      recentActivities,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao carregar relatórios do banco de dados." });
+  }
+}
+
+

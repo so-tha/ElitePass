@@ -31,11 +31,6 @@ export function Navbar() {
             <span className={styles.logoText}>ElitePass</span>
           </Link>
 
-          <nav className={styles.navLinks}>
-            <Link href="/#shows" className={styles.navLink}>Shows</Link>
-            <Link href="/#filmes" className={styles.navLink}>Filmes</Link>
-          </nav>
-
           <div className={styles.navActions}>
             <a href="#criar" className={styles.navActionItem}>
               <PlusIcon size={15} />
@@ -87,9 +82,9 @@ export function Navbar() {
                   <a href="#meus-eventos" className={styles.mobileLink} onClick={close}>
                     <TicketIcon size={15} /> Meus eventos
                   </a>
-                  <a href="#dashboard" className={styles.mobileLink} onClick={close}>
+                  <Link href="/dashboard" className={styles.mobileLink} onClick={close}>
                     <GridIcon size={15} /> Dashboard
-                  </a>
+                  </Link>
                 </>
               )}
               <button

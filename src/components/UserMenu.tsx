@@ -82,9 +82,9 @@ export function UserMenu() {
                   </a>
                 </li>
                 <li>
-                  <a href="#dashboard" className={styles.menuItem} role="menuitem" onClick={() => setOpen(false)}>
+                  <Link href="/dashboard" className={styles.menuItem} role="menuitem" onClick={() => setOpen(false)}>
                     <GridIcon size={15} /> Dashboard
-                  </a>
+                  </Link>
                 </li>
               </>
             )}
