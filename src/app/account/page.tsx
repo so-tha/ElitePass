@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import {
   UserIcon,
   MailIcon,
@@ -12,7 +13,6 @@ import {
   TicketIcon,
   MapPinIcon,
   PlusIcon,
-  AlertTriangleIcon,
 } from "@/components/icons";
 
 export default function AccountPage() {
@@ -29,7 +29,6 @@ export default function AccountPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [twoFactor, setTwoFactor] = useState(true);
 
   // Address Form State
   const [cep, setCep] = useState("01310-100");
@@ -40,9 +39,11 @@ export default function AccountPage() {
   const [city, setCity] = useState("São Paulo");
   const [state, setState] = useState("SP");
 
-  // Feedback State
+  // Feedback & Modal State
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +55,10 @@ export default function AccountPage() {
       setToastMessage("Suas informações foram atualizadas com sucesso!");
       setTimeout(() => setToastMessage(null), 4000);
     }, 800);
+  };
+
+  const handleConfirmLogout = () => {
+    window.location.href = "/";
   };
 
   const getInitials = (fullName: string) => {
@@ -75,18 +80,15 @@ export default function AccountPage() {
               <h1 className={styles.userName}>{name}</h1>
               <div className={styles.userEmail}>
                 <span>{email}</span>
-                <span className={styles.vipBadge}>★ Membro VIP</span>
+                <span className={styles.vipBadge}>Membro VIP</span>
               </div>
             </div>
           </div>
 
           <button
+            type="button"
             className={styles.logoutBtn}
-            onClick={() => {
-              if (confirm("Deseja realmente sair da sua conta?")) {
-                window.location.href = "/";
-              }
-            }}
+            onClick={() => setShowLogoutModal(true)}
           >
             Sair da Conta
           </button>
@@ -97,6 +99,7 @@ export default function AccountPage() {
           {/* ── SIDEBAR NAVIGATION ── */}
           <aside className={styles.sidebarNav}>
             <button
+              type="button"
               className={`${styles.navItem} ${activeTab === "pessoais" ? styles.navItemActive : ""}`}
               onClick={() => setActiveTab("pessoais")}
             >
@@ -105,6 +108,7 @@ export default function AccountPage() {
             </button>
 
             <button
+              type="button"
               className={`${styles.navItem} ${activeTab === "seguranca" ? styles.navItemActive : ""}`}
               onClick={() => setActiveTab("seguranca")}
             >
@@ -113,6 +117,7 @@ export default function AccountPage() {
             </button>
 
             <button
+              type="button"
               className={`${styles.navItem} ${activeTab === "endereco" ? styles.navItemActive : ""}`}
               onClick={() => setActiveTab("endereco")}
             >
@@ -121,6 +126,7 @@ export default function AccountPage() {
             </button>
 
             <button
+              type="button"
               className={`${styles.navItem} ${activeTab === "pagamento" ? styles.navItemActive : ""}`}
               onClick={() => setActiveTab("pagamento")}
             >
@@ -439,9 +445,9 @@ export default function AccountPage() {
                   <button
                     type="button"
                     className={styles.btnAddCard}
-                    onClick={() => alert("Adicionar cartão em breve!")}
+                    onClick={() => setShowCardModal(true)}
                   >
-                    <PlusIcon size={22} />
+                    <PlusIcon size={20} />
                     <span>Adicionar Novo Cartão</span>
                   </button>
                 </div>
@@ -450,6 +456,29 @@ export default function AccountPage() {
           </section>
         </div>
       </main>
+
+      {/* ── CUSTOM IN-APP CONFIRMATION POPUPS ── */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleConfirmLogout}
+        title="Encerrar Sessão"
+        description="Tem certeza de que deseja sair da sua conta na ElitePass?"
+        confirmText="Sair"
+        cancelText="Cancelar"
+        variant="danger"
+      />
+
+      <ConfirmModal
+        isOpen={showCardModal}
+        onClose={() => setShowCardModal(false)}
+        onConfirm={() => {}}
+        title="Adicionar Cartão"
+        description="O cadastro de novos cartões de crédito estará disponível em breve no ambiente seguro do gateway."
+        confirmText="Entendido"
+        cancelText="Fechar"
+        variant="default"
+      />
     </div>
   );
 }

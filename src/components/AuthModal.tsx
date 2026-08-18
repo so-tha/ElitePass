@@ -243,7 +243,14 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
           <div className={styles.dividerLine} />
         </div>
 
-        <button type="button" className={styles.btnGoogle} onClick={() => alert("Login via Google em breve!")}>
+        <button
+          type="button"
+          className={styles.btnGoogle}
+          onClick={() => {
+            setError(null);
+            setSuccess("Login via Google estará disponível em breve.");
+          }}
+        >
           <svg width="16" height="16" viewBox="0 0 24 24">
             <path
               fill="#EA4335"
