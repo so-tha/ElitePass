@@ -4,8 +4,6 @@ import { prisma } from "../prisma";
 import { tierSchema } from "../lib/eventTiers";
 import { AuthenticatedRequest } from "../middlewares/requireAuth";
 
-// ─── Schemas ───────────────────────────────────────────────────
-
 const createEventSchema = z.object({
   title:       z.string().min(3, "Título deve ter ao menos 3 caracteres"),
   description: z.string().optional(),
@@ -21,9 +19,6 @@ const createEventSchema = z.object({
 
 const updateEventSchema = createEventSchema.partial();
 
-// ─── Controllers ──────────────────────────────────────────────
-
-/** POST /events — Cria novo evento (ORGANIZER) */
 export async function createEvent(req: Request, res: Response): Promise<void> {
   const { userId } = (req as AuthenticatedRequest).user;
 
@@ -207,7 +202,6 @@ export async function getEventStats(req: Request, res: Response): Promise<void> 
   const remainingCapacity = Math.max(0, event.capacity - event.soldCount);
   const occupancyPercentage = Math.min(100, Math.round((event.soldCount / event.capacity) * 100));
 
-  // Agrupamento de vendas por tier
   const tierStats: Record<string, { label: string; sold: number; revenue: number }> = {};
   for (const order of event.orders) {
     if (!tierStats[order.tierId]) {

@@ -25,7 +25,6 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// ─── API Routes ────────────────────────────────────────────────
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);
 app.use("/api/tickets/validate", ticketValidationLimiter);
@@ -44,12 +43,10 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "ElitePass Backend API" });
 });
 
-// Rotas não mapeadas
 app.use((_req, res) => {
   res.status(404).json({ error: "Rota não encontrada." });
 });
 
-// Handler global de erros
 app.use(errorHandler);
 
 app.listen(env.PORT, () => {

@@ -94,7 +94,6 @@ export async function validateTicket(req: Request, res: Response): Promise<void>
 
   try {
     const ticket = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Busca o ticket com lock para evitar dupla validação concorrente
       const found = await tx.ticket.findUnique({
         where:   { code },
         include: {

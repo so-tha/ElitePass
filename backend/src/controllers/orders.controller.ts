@@ -6,8 +6,6 @@ import { tiersArraySchema } from "../lib/eventTiers";
 import { AuthenticatedRequest } from "../middlewares/requireAuth";
 import type { Prisma } from "../generated/client/client";
 
-// ─── Schema ───────────────────────────────────────────────────
-
 const createOrderSchema = z.object({
   eventId:    z.string().min(1),
   eventType:  z.enum(["SHOW", "MOVIE"]),
@@ -20,9 +18,6 @@ const createOrderSchema = z.object({
   quantity:   z.number().int().min(1).max(10),
 });
 
-// ─── Controllers ──────────────────────────────────────────────
-
-/** POST /orders — Cria pedido e emite ingressos (CLIENT) */
 export async function createOrder(req: Request, res: Response): Promise<void> {
   const { userId } = (req as AuthenticatedRequest).user;
 
@@ -58,7 +53,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
           throw new Error("CAPACITY_EXCEEDED");
         }
 
-        // Incrementa soldCount do evento atomicamente
         await tx.event.update({
           where: { id: eventId },
           data:  { soldCount: { increment: quantity } },
@@ -141,7 +135,6 @@ export async function getOrderById(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // Garante que o usuário só veja seus próprios pedidos
   if (order.userId !== userId) {
     res.status(403).json({ error: "Acesso não autorizado." });
     return;

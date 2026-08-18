@@ -5,9 +5,6 @@ import { prisma } from "../prisma";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
 import { AuthenticatedRequest } from "../middlewares/requireAuth";
 
-
-// ─── Schemas de validação ─────────────────────────────────────
-
 const registerSchema = z.object({
   name:     z.string().min(3, "Nome deve ter ao menos 3 caracteres"),
   email:    z.string().email("E-mail inválido"),
@@ -20,9 +17,6 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-// ─── Controllers ──────────────────────────────────────────────
-
-/** POST /auth/register */
 export async function register(req: Request, res: Response): Promise<void> {
   const parse = registerSchema.safeParse(req.body);
   if (!parse.success) {
@@ -54,7 +48,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     })
     .status(201)
     .json({ user, accessToken });
