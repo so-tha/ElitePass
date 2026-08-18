@@ -3,6 +3,19 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
+import { Navbar } from "@/components/Navbar";
+import {
+  SearchIcon,
+  XIcon,
+  MapPinIcon,
+  CalendarIcon,
+  TicketIcon,
+  StarIcon,
+  FilmIcon,
+  AlertTriangleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@/components/icons";
 import {
   TMEvent,
   getBestImage,
@@ -34,23 +47,10 @@ function CardSkeleton() {
   );
 }
 
-const CITIES = [
-  "Todos os lugares",
-  "São Paulo, SP",
-  "Rio de Janeiro, RJ",
-  "Belo Horizonte, MG",
-  "Salvador, BA",
-  "Curitiba, PR",
-  "Recife, PE",
-  "Brasília, DF",
-];
-
 export default function Home() {
   const router = useRouter();
   const [events, setEvents] = useState<TMEvent[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedCity, setSelectedCity] = useState("Todos os lugares");
-  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -190,49 +190,15 @@ export default function Home() {
 
   return (
     <div className={styles.root}>
-      {/* ── SYMPLA-ADAPTED HEADER (ESTABLISHED DARK & GOLD PALETTE) ── */}
-      <header className={styles.navbar}>
-        <div className={styles.navInner}>
-          <a href="/" className={styles.logo} id="logo-home">
-            <div className={styles.logoBadge}>EP</div>
-            <span className={styles.logoText}>ElitePass</span>
-          </a>
-
-          {/* Sympla-style Header Search + Location Container */}
-
-          {/* Sympla-style Nav Actions */}
-          <div className={styles.navActions}>
-            <a href="#criar" className={styles.navActionItem} id="link-criar-evento">
-              <span className={styles.navActionIcon}>⊕</span>
-              <span>Criar evento</span>
-            </a>
-            <a href="#meus-eventos" className={styles.navActionItem} id="link-meus-eventos">
-              <span className={styles.navActionIcon}></span>
-              <span>Meus eventos</span>
-            </a>
-            <a href="#meus-ingressos" className={styles.navActionItem} id="link-meus-ingressos">
-              <span className={styles.navActionIcon}></span>
-              <span>Meus ingressos</span>
-            </a>
-            <a href="#auth" className={styles.btnAuth} id="btn-entrar-cadastrar">
-              Entrar / Cadastrar
-            </a>
-          </div>
-
-          <button className={styles.menuToggle} id="btn-menu-toggle" aria-label="Abrir menu">
-            <span /><span /><span />
-          </button>
-        </div>
-      </header>
+      <Navbar />
 
       <main className={styles.main}>
-        {/* ── PRESERVED MAIN SEARCH HERO BANNER ── */}
         <section className={styles.searchSection}>
           <h1 className={styles.searchHeading}>
             Encontre seu próximo <span className={styles.highlight}>evento</span>
           </h1>
           <div className={styles.searchBar}>
-            <span className={styles.searchIcon}>🔍</span>
+            <SearchIcon size={15} className={styles.searchIcon} />
             <input
               id="input-busca-main"
               type="text"
@@ -249,15 +215,19 @@ export default function Home() {
                 onClick={() => setSearch("")}
                 aria-label="Limpar busca"
               >
-                ✕
+                <XIcon size={12} />
               </button>
             )}
           </div>
         </section>
 
-        {error && <div className={styles.errorBanner}>⚠️ {error}</div>}
+        {error && (
+          <div className={styles.errorBanner}>
+            <AlertTriangleIcon size={14} />
+            {error}
+          </div>
+        )}
 
-        {/* ── 3D COVERFLOW HERO CAROUSEL (SYMPLA-STYLE ADAPTATION) ── */}
         <section
           className={styles.coverflowSection}
           onMouseEnter={() => setHeroPaused(true)}
@@ -267,7 +237,6 @@ export default function Home() {
             <div className={`${styles.coverflowCard} ${styles.skeleton}`} style={{ position: "relative" }} />
           ) : heroItems.length === 0 ? null : (
             <>
-              {/* Coverflow Track */}
               <div className={styles.coverflowTrack}>
                 {heroItems.map((item, idx) => {
                   const isEvent = item.type === "event";
@@ -303,24 +272,22 @@ export default function Home() {
                   );
                 })}
 
-                {/* Left/Right Arrow Controls */}
                 <button
                   className={`${styles.coverflowArrow} ${styles.coverflowArrowLeft}`}
                   onClick={() => setHeroIndex((i) => (i - 1 + heroItems.length) % heroItems.length)}
                   aria-label="Anterior"
                 >
-                  ‹
+                  <ChevronLeftIcon size={20} />
                 </button>
                 <button
                   className={`${styles.coverflowArrow} ${styles.coverflowArrowRight}`}
                   onClick={() => setHeroIndex((i) => (i + 1) % heroItems.length)}
                   aria-label="Próximo"
                 >
-                  ›
+                  <ChevronRightIcon size={20} />
                 </button>
               </div>
 
-              {/* Coverflow Dots & Active Item Details */}
               {activeItem && (
                 <div className={styles.coverflowFooter}>
                   <div className={styles.dotsContainer}>
@@ -341,15 +308,14 @@ export default function Home() {
                   <div className={styles.activeMeta}>
                     {isActiveEvent ? (
                       <>
-                        <span className={styles.metaItem}>📍 {getVenue(activeEv!)}</span>
-                        <span className={styles.metaItem}>📅 {formatDate(activeEv!.dates.start.localDate)}</span>
-                        <span className={styles.metaItem}>🎟️ {formatPrice(activeEv!)}</span>
+                        <span className={styles.metaItem}><MapPinIcon />{getVenue(activeEv!)}</span>
+                        <span className={styles.metaItem}><CalendarIcon />{formatDate(activeEv!.dates.start.localDate)}</span>
+                        <span className={styles.metaItem}><TicketIcon />{formatPrice(activeEv!)}</span>
                       </>
                     ) : (
                       <>
-                        <span className={styles.metaItem}>🎬 Nos cinemas</span>
-                        <span className={styles.metaItem}>⭐ {activeMv!.vote_average.toFixed(1)} / 10</span>
-                        <span className={styles.metaItem}>📅 Lançamento: {formatMovieDate(activeMv!.release_date)}</span>
+                        <span className={styles.metaItem}><StarIcon />{activeMv!.vote_average.toFixed(1)} / 10</span>
+                        <span className={styles.metaItem}><CalendarIcon />Lançamento: {formatMovieDate(activeMv!.release_date)}</span>
                       </>
                     )}
                   </div>
@@ -368,9 +334,8 @@ export default function Home() {
           )}
         </section>
 
-        {/* ── SHOWS IN CAROUSEL ── */}
         {!error && (
-          <section className={styles.showsSection}>
+          <section id="shows" className={styles.showsSection}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
                 {search ? `Resultados para "${search}"` : "Shows e Eventos em Cartaz"}
@@ -387,7 +352,7 @@ export default function Home() {
                   onClick={() => scroll(trackRef, "left")}
                   aria-label="Anterior"
                 >
-                  ‹
+                  <ChevronLeftIcon size={22} />
                 </button>
                 <div className={styles.showsTrack} ref={trackRef}>
                   {loading
@@ -412,8 +377,8 @@ export default function Home() {
                           <div className={styles.cardBody}>
                             <p className={styles.cardArtist}>{getArtistName(event)}</p>
                             <p className={styles.cardTitle}>{event.name}</p>
-                            <p className={styles.cardDate}>📅 {formatDate(event.dates.start.localDate)}</p>
-                            <p className={styles.cardVenue}>📍 {getVenue(event)}</p>
+                            <p className={styles.cardDate}><CalendarIcon size={12} />{formatDate(event.dates.start.localDate)}</p>
+                            <p className={styles.cardVenue}><MapPinIcon size={12} />{getVenue(event)}</p>
                             <div className={styles.cardFooter}>
                               <span className={styles.cardPrice}>{formatPrice(event)}</span>
                               <button
@@ -436,14 +401,13 @@ export default function Home() {
                   onClick={() => scroll(trackRef, "right")}
                   aria-label="Próximo"
                 >
-                  ›
+                  <ChevronRightIcon size={22} />
                 </button>
               </div>
             )}
           </section>
         )}
 
-        {/* ── MOVIES IN THEATRES ── */}
         <section id="filmes" className={styles.showsSection}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Filmes em Cartaz</h2>
@@ -451,7 +415,7 @@ export default function Home() {
           </div>
 
           {moviesError ? (
-            <p className={styles.noResults}>⚠️ {moviesError}</p>
+            <p className={styles.noResults}><AlertTriangleIcon size={13} /> {moviesError}</p>
           ) : !moviesLoading && movies.length === 0 ? (
             <p className={styles.noResults}>Nenhum filme encontrado.</p>
           ) : (
@@ -461,7 +425,7 @@ export default function Home() {
                 onClick={() => scroll(moviesRef, "left")}
                 aria-label="Ver filmes anteriores"
               >
-                ‹
+                <ChevronLeftIcon size={22} />
               </button>
               <div className={styles.showsTrack} ref={moviesRef}>
                 {moviesLoading
@@ -486,10 +450,10 @@ export default function Home() {
                           </span>
                         </div>
                         <div className={styles.cardBody}>
-                          <p className={styles.cardArtist}>⭐ {movie.vote_average.toFixed(1)}</p>
+                          <p className={styles.cardArtist}><StarIcon size={11} />{movie.vote_average.toFixed(1)}</p>
                           <p className={styles.cardTitle}>{movie.title}</p>
-                          <p className={styles.cardDate}>📅 {formatMovieDate(movie.release_date)}</p>
-                          <p className={styles.cardVenue}>🎬 No cinema</p>
+                          <p className={styles.cardDate}><CalendarIcon size={12} />{formatMovieDate(movie.release_date)}</p>
+                          <p className={styles.cardVenue}><FilmIcon size={12} />No cinema</p>
                           <div className={styles.cardFooter}>
                             <span className={styles.cardPrice}>{formatMoviePrice(movie)}</span>
                             <button
@@ -512,7 +476,7 @@ export default function Home() {
                 onClick={() => scroll(moviesRef, "right")}
                 aria-label="Ver próximos filmes"
               >
-                ›
+                <ChevronRightIcon size={22} />
               </button>
             </div>
           )}

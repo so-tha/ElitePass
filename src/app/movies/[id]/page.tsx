@@ -2,18 +2,30 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import styles from "./page.module.css";
+import { Navbar } from "@/components/Navbar";
+import { Stepper } from "@/components/Stepper";
+import {
+  ClockIcon,
+  CalendarIcon,
+  FilmIcon,
+  StarIcon,
+  PlayIcon,
+  AlertTriangleIcon,
+  LockIcon,
+  CheckIcon,
+  MailIcon,
+  ShareIcon,
+} from "@/components/icons";
 import {
   TMDBMovieDetail,
   tmdbBackdrop,
   tmdbPoster,
   formatMovieDate,
-  formatMoviePrice,
   generateMoviePrice,
   GENRE_MAP,
 } from "@/lib/tmdb";
-
-// ─── Tipos internos ────────────────────────────────────────────────────────────
 
 interface TicketTier {
   id: string;
@@ -57,30 +69,10 @@ function buildTiers(movie: TMDBMovieDetail): TicketTier[] {
   ];
 }
 
-// ─── Step badge ────────────────────────────────────────────────────────────────
-
-interface StepBadgeProps { step: number; current: number; label: string; }
-function StepBadge({ step, current, label }: StepBadgeProps) {
-  const done = current > step;
-  const active = current === step;
-  return (
-    <div className={`${styles.stepBadge} ${active ? styles.stepActive : ""} ${done ? styles.stepDone : ""}`}>
-      <span className={styles.stepNumber}>{done ? "✓" : step}</span>
-      <span className={styles.stepLabel}>{label}</span>
-    </div>
-  );
-}
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
 function Skeleton() {
   return (
     <div className={styles.root}>
-      <header className={styles.navbar}>
-        <div className={styles.navInner}>
-          <a href="/" className={styles.logo}><span className={styles.logoText}>ElitePass</span></a>
-        </div>
-      </header>
+      <Navbar />
       <div className={`${styles.hero} ${styles.skeleton}`} style={{ minHeight: 340 }} />
       <main className={styles.main}>
         <div className={`${styles.skeletonBlock}`} style={{ height: 40, width: "60%", marginBottom: 24 }} />
@@ -89,8 +81,6 @@ function Skeleton() {
     </div>
   );
 }
-
-// ─── Validações ────────────────────────────────────────────────────────────────
 
 function isValidCPF(cpf: string): boolean {
   const d = cpf.replace(/\D/g, "");
@@ -131,8 +121,6 @@ function isValidExpiry(e: string): boolean {
   return true;
 }
 
-// ─── Página principal ──────────────────────────────────────────────────────────
-
 export default function MoviePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -145,7 +133,6 @@ export default function MoviePage() {
   const [selectedTier, setSelectedTier] = useState<TicketTier | null>(null);
   const [qty, setQty]                 = useState(1);
   const [step, setStep]               = useState(1);
-  const [menuOpen, setMenuOpen]       = useState(false);
   const [orderCode, setOrderCode]     = useState("");
   const [ticketCode, setTicketCode]   = useState("");
 
@@ -234,7 +221,7 @@ export default function MoviePage() {
   if (error || !movie) {
     return (
       <div className={styles.errorPage}>
-        <p className={styles.errorIcon}>⚠️</p>
+        <AlertTriangleIcon size={40} className={styles.errorIcon} />
         <h2>Filme não encontrado</h2>
         <p>{error}</p>
         <button className={styles.btnBack} onClick={() => router.push("/")}>← Voltar ao início</button>
@@ -253,27 +240,9 @@ export default function MoviePage() {
 
   return (
     <div className={styles.root}>
-      {/* ── NAVBAR ── */}
-      <header className={styles.navbar}>
-        <div className={styles.navInner}>
-          <a href="/" className={styles.logo} id="logo-home">
-            <span className={styles.logoText}>ElitePass</span>
-          </a>
-          <nav className={`${styles.navLinks} ${menuOpen ? styles.navOpen : ""}`}>
-            <a href="/#shows" className={styles.navLink}>Shows</a>
-            <a href="/#filmes" className={styles.navLink}>Filmes</a>
-            <a href="/#festivais" className={styles.navLink}>Festivais</a>
-            <a href="/#teatro" className={styles.navLink}>Teatro</a>
-          </nav>
-          <a href="#auth" className={styles.btnAuth} id="btn-entrar">Entrar / Cadastrar</a>
-          <button className={styles.menuToggle} id="btn-menu-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu">
-            <span /><span /><span />
-          </button>
-        </div>
-      </header>
+      <Navbar />
 
       <main className={styles.main}>
-        {/* ── BACK & HERO (apenas Step 1) ── */}
         {step === 1 && (
           <>
             <button className={styles.backBtn} id="btn-voltar" onClick={() => router.push("/")}>
@@ -289,14 +258,14 @@ export default function MoviePage() {
                 <div className={styles.movieInfo}>
                   <span className={styles.heroBadge}>{genre}</span>
                   <h1 className={styles.heroTitle}>{movie.title}</h1>
-                  {movie.tagline && <p className={styles.movieTagline}>"{movie.tagline}"</p>}
+                  {movie.tagline && <p className={styles.movieTagline}>&ldquo;{movie.tagline}&rdquo;</p>}
                   <div className={styles.movieMeta}>
                     {movie.runtime && (
-                      <span className={styles.metaChip}>⏱ {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}min</span>
+                      <span className={styles.metaChip}><ClockIcon size={12} />{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}min</span>
                     )}
-                    <span className={styles.metaChip}>📅 {releaseDate}</span>
-                    {director && <span className={styles.metaChip}>🎬 {director}</span>}
-                    <span className={styles.metaChip}>⭐ {movie.vote_average.toFixed(1)}/10</span>
+                    <span className={styles.metaChip}><CalendarIcon size={12} />{releaseDate}</span>
+                    {director && <span className={styles.metaChip}><FilmIcon size={12} />{director}</span>}
+                    <span className={styles.metaChip}><StarIcon size={12} />{movie.vote_average.toFixed(1)}/10</span>
                   </div>
                   <p className={styles.movieOverview}>{movie.overview}</p>
                   {trailer && (
@@ -307,7 +276,7 @@ export default function MoviePage() {
                       className={styles.btnTrailer}
                       id="btn-trailer"
                     >
-                      ▶ Assistir Trailer
+                      <PlayIcon size={11} /> Assistir Trailer
                     </a>
                   )}
                 </div>
@@ -316,18 +285,8 @@ export default function MoviePage() {
           </>
         )}
 
-        {/* ── STEPS ── */}
-        {step < 3 && (
-          <div className={styles.stepper}>
-            <StepBadge step={1} current={step} label="Ingressos" />
-            <div className={`${styles.stepLine} ${step > 1 ? styles.stepLineDone : ""}`} />
-            <StepBadge step={2} current={step} label="Pagamento" />
-            <div className={styles.stepLine} />
-            <StepBadge step={3} current={step} label="Confirmação" />
-          </div>
-        )}
+        {step < 3 && <Stepper current={step} />}
 
-        {/* ── STEP 1 — SELEÇÃO DE INGRESSO ── */}
         {step === 1 && (
           <div className={styles.layout}>
             <section className={styles.tiersSection}>
@@ -367,11 +326,11 @@ export default function MoviePage() {
                 <div>
                   <p className={styles.summaryName}>{movie.title}</p>
                   <p className={styles.summaryMeta}>{releaseDate}</p>
-                  <p className={styles.summaryMeta}>🎬 Sessão no cinema</p>
+                  <p className={styles.summaryMeta}><FilmIcon size={12} /> Sessão no cinema</p>
                 </div>
               </div>
               <div className={styles.summaryNote}>
-                ⚠️ Preços simulados para fins de demonstração.
+                <AlertTriangleIcon size={12} /> Preços simulados para fins de demonstração.
               </div>
               <div className={styles.summaryLines}>
                 <div className={styles.summaryLine}>
@@ -399,7 +358,6 @@ export default function MoviePage() {
           </div>
         )}
 
-        {/* ── STEP 2 — CHECKOUT ── */}
         {step === 2 && (
           <div className={styles.checkoutLayout}>
             <section className={styles.formSection}>
@@ -477,17 +435,16 @@ export default function MoviePage() {
                 disabled={processing}
               >
                 {processing ? (
-                  <span className={styles.btnSpinner}>⏳ Processando...</span>
+                  <span className={styles.btnSpinner}><span className={styles.spinner} /> Processando...</span>
                 ) : (
-                  `🔒 Pagar ${fmt(grandTotal)}`
+                  <><LockIcon size={13} /> Pagar {fmt(grandTotal)}</>
                 )}
               </button>
-              <p className={styles.secureNote}>🔐 Pagamento simulado — nenhum dado real é processado</p>
+              <p className={styles.secureNote}><LockIcon size={11} /> Pagamento simulado — nenhum dado real é processado</p>
             </aside>
           </div>
         )}
 
-        {/* ── STEP 3 — CONFIRMAÇÃO ── */}
         {step === 3 && (
           <div className={styles.confirmWrap}>
             <div className={styles.checkmarkCircle}>
@@ -505,7 +462,7 @@ export default function MoviePage() {
                   <span className={styles.tcLabel}>Número do Pedido</span>
                   <span className={styles.tcOrderCode}>{orderCode}</span>
                 </div>
-                <span className={styles.tcBadge}>Confirmado ✓</span>
+                <span className={styles.tcBadge}><CheckIcon size={11} /> Confirmado</span>
               </div>
               <div className={styles.tcDetails}>
                 <div className={styles.tcField}>
@@ -540,13 +497,13 @@ export default function MoviePage() {
               <div className={styles.tcDivider} />
               <div className={styles.tcMeta}>
                 <div className={styles.tcMetaRow}>
-                  <span>🎬 Lançamento</span><span>{releaseDate}</span>
+                  <span><CalendarIcon size={12} /> Lançamento</span><span>{releaseDate}</span>
                 </div>
                 <div className={styles.tcMetaRow}>
-                  <span>🎭 Gênero</span><span>{genre}</span>
+                  <span><FilmIcon size={12} /> Gênero</span><span>{genre}</span>
                 </div>
                 <div className={styles.tcMetaRow}>
-                  <span>✉️ E-mail de Confirmação</span><span>{form.email}</span>
+                  <span><MailIcon size={12} /> E-mail de Confirmação</span><span>{form.email}</span>
                 </div>
                 <div className={`${styles.tcMetaRow} ${styles.tcMetaTotalRow}`}>
                   <span>Total Pago</span><span className={styles.tcTotalValue}>{fmt(grandTotal)}</span>
@@ -556,20 +513,20 @@ export default function MoviePage() {
 
             <div className={styles.actionButtons}>
               <button id="btn-compartilhar" className={styles.btnContinue}>
-                🔗 Compartilhar Ingresso
+                <ShareIcon size={14} /> Compartilhar Ingresso
               </button>
             </div>
 
             <div className={styles.infoBoxes}>
               <div className={styles.infoBox}>
-                <span className={styles.infoBoxIcon}>🎬</span>
+                <ClockIcon size={20} className={styles.infoBoxIcon} />
                 <div>
                   <strong>Chegue cedo</strong>
                   <p>Recomendamos chegar 20 min antes da sessão</p>
                 </div>
               </div>
               <div className={styles.infoBox}>
-                <span className={styles.infoBoxIcon}>🔒</span>
+                <LockIcon size={20} className={styles.infoBoxIcon} />
                 <div>
                   <strong>Sua segurança</strong>
                   <p>Ingresso válido com identificação obrigatória</p>
@@ -577,7 +534,7 @@ export default function MoviePage() {
               </div>
             </div>
 
-            <a href="/" className={styles.continueLink}>Continuar explorando → </a>
+            <Link href="/" className={styles.continueLink}>Continuar explorando →</Link>
           </div>
         )}
       </main>

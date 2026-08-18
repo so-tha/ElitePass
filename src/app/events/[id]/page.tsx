@@ -3,6 +3,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import styles from "./page.module.css";
+import { Navbar } from "@/components/Navbar";
+import { Stepper } from "@/components/Stepper";
+import {
+  CalendarIcon,
+  MapPinIcon,
+  AlertTriangleIcon,
+  LockIcon,
+  CheckIcon,
+  ClockIcon,
+  ShareIcon,
+  MailIcon,
+} from "@/components/icons";
 import {
   TMEvent,
   getBestImage,
@@ -12,8 +24,6 @@ import {
   getCategory,
   generateMockPrices,
 } from "@/lib/ticketmaster";
-
-// ─── helpers ────────────────────────────────────────────────────────────────
 
 function formatCurrency(value: number, currency = "BRL"): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -28,8 +38,6 @@ function formatTime(localTime?: string): string {
   const [h, m] = localTime.split(":");
   return `${h}:${m}`;
 }
-
-// ─── ticket tier types ───────────────────────────────────────────────────────
 
 interface TicketTier {
   id: string;
@@ -140,8 +148,6 @@ function arePricesMocked(tiers: TicketTier[]): boolean {
   return tiers.length > 0 && tiers.every((t) => !t.hasPrices);
 }
 
-// ─── sub-components ──────────────────────────────────────────────────────────
-
 function Skeleton() {
   return (
     <div className={styles.skeletonPage}>
@@ -154,24 +160,6 @@ function Skeleton() {
   );
 }
 
-interface StepBadgeProps {
-  step: number;
-  current: number;
-  label: string;
-}
-function StepBadge({ step, current, label }: StepBadgeProps) {
-  const done = current > step;
-  const active = current === step;
-  return (
-    <div className={`${styles.stepBadge} ${active ? styles.stepActive : ""} ${done ? styles.stepDone : ""}`}>
-      <span className={styles.stepNumber}>{done ? "✓" : step}</span>
-      <span className={styles.stepLabel}>{label}</span>
-    </div>
-  );
-}
-
-// ─── main page ───────────────────────────────────────────────────────────────
-
 export default function EventPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -180,17 +168,14 @@ export default function EventPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // purchase state
   const [tiers, setTiers] = useState<TicketTier[]>([]);
   const [selectedTier, setSelectedTier] = useState<TicketTier | null>(null);
   const [qty, setQty] = useState(1);
-  const [step, setStep] = useState(1); // 1=select, 2=checkout, 3=success
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [step, setStep] = useState(1);
   const [mockPrices, setMockPrices] = useState(false);
   const [orderCode,  setOrderCode]  = useState("");
   const [ticketCode, setTicketCode] = useState("");
 
-  // checkout form
   const [form, setForm] = useState({ name: "", email: "", cpf: "", card: "", expiry: "", cvv: "" });
   const [formErrors, setFormErrors] = useState<Partial<typeof form>>({});
   const [processing, setProcessing] = useState(false);
@@ -342,7 +327,7 @@ export default function EventPage() {
   if (error || !event) {
     return (
       <div className={styles.errorPage}>
-        <p className={styles.errorIcon}>⚠️</p>
+        <AlertTriangleIcon size={40} className={styles.errorIcon} />
         <h2>Evento não encontrado</h2>
         <p>{error}</p>
         <button className={styles.btnBack} onClick={() => router.push("/")}>
@@ -361,35 +346,9 @@ export default function EventPage() {
 
   return (
     <div className={styles.root}>
-      {/* ── NAVBAR ── */}
-      <header className={styles.navbar}>
-        <div className={styles.navInner}>
-          <a href="/" className={styles.logo} id="logo-home">
-            <span className={styles.logoText}>ElitePass</span>
-          </a>
-
-          <nav className={`${styles.navLinks} ${menuOpen ? styles.navOpen : ""}`}>
-            <a href="/#shows" className={styles.navLink} id="nav-shows">Shows</a>
-            <a href="/#festivais" className={styles.navLink} id="nav-festivais">Festivais</a>
-            <a href="/#esportes" className={styles.navLink} id="nav-esportes">Esportes</a>
-            <a href="/#teatro" className={styles.navLink} id="nav-teatro">Teatro</a>
-          </nav>
-
-          <a href="#auth" className={styles.btnAuth} id="btn-entrar">Entrar / Cadastrar</a>
-
-          <button
-            className={styles.menuToggle}
-            id="btn-menu-toggle"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Abrir menu"
-          >
-            <span /><span /><span />
-          </button>
-        </div>
-      </header>
+      <Navbar />
 
       <main className={styles.main}>
-        {/* ── BACK & HERO (apenas no Step 1 - Escolha de Ingresso) ── */}
         {step === 1 && (
           <>
             <button className={styles.backBtn} id="btn-voltar" onClick={() => router.push("/")}>
@@ -405,11 +364,11 @@ export default function EventPage() {
                 <h1 className={styles.heroTitle}>{event.name}</h1>
                 <div className={styles.heroMeta}>
                   <span className={styles.heroMetaItem}>
-                    <span className={styles.metaIcon}>📅</span>
+                    <CalendarIcon size={14} className={styles.metaIcon} />
                     {dateStr}{timeStr && ` · ${timeStr}`}
                   </span>
                   <span className={styles.heroMetaItem}>
-                    <span className={styles.metaIcon}>📍</span>
+                    <MapPinIcon size={14} className={styles.metaIcon} />
                     {venue}
                   </span>
                 </div>
@@ -418,18 +377,8 @@ export default function EventPage() {
           </>
         )}
 
-        {/* ── STEPS ── */}
-        {step < 3 && (
-          <div className={styles.stepper}>
-            <StepBadge step={1} current={step} label="Ingressos" />
-            <div className={`${styles.stepLine} ${step > 1 ? styles.stepLineDone : ""}`} />
-            <StepBadge step={2} current={step} label="Pagamento" />
-            <div className={styles.stepLine} />
-            <StepBadge step={3} current={step} label="Confirmação" />
-          </div>
-        )}
+        {step < 3 && <Stepper current={step} />}
 
-        {/* ── STEP 1 — TICKET SELECTION ── */}
         {step === 1 && (
           <div className={styles.layout}>
             <section className={styles.tiersSection}>
@@ -463,7 +412,7 @@ export default function EventPage() {
                     <ul className={styles.tierPerks}>
                       {tier.perks.map((perk) => (
                         <li key={perk} className={styles.tierPerk}>
-                          <span className={styles.checkIcon}>✓</span> {perk}
+                          <CheckIcon size={11} className={styles.checkIcon} /> {perk}
                         </li>
                       ))}
                     </ul>
@@ -533,17 +482,15 @@ export default function EventPage() {
 
                 {mockPrices && (
                   <p className={styles.mockBadge}>
-                    ⚠️ Preços simulados — apenas para demonstração
+                    <AlertTriangleIcon size={12} /> Preços simulados — apenas para demonstração
                   </p>
                 )}
 
-                <p className={styles.summaryNote}>🔒 Pagamento 100% seguro e criptografado</p>
+                <p className={styles.summaryNote}><LockIcon /> Pagamento 100% seguro e criptografado</p>
               </div>
             </aside>
           </div>
         )}
-
-        {/* ── STEP 2 — CHECKOUT ── */}
         {step === 2 && (
           <div className={styles.layout}>
             <section className={styles.checkoutSection}>
@@ -701,17 +648,14 @@ export default function EventPage() {
                   ← Voltar
                 </button>
 
-                <p className={styles.summaryNote}>🔒 Pagamento 100% seguro e criptografado</p>
+                <p className={styles.summaryNote}><LockIcon /> Pagamento 100% seguro e criptografado</p>
               </div>
             </aside>
           </div>
         )}
 
-        {/* ── STEP 3 — CONFIRMAÇÃO DO INGRESSO ── */}
         {step === 3 && (
           <div className={styles.confirmPage}>
-
-            {/* Checkmark animado */}
             <div className={styles.confirmCheck}>
               <svg viewBox="0 0 52 52" className={styles.checkSvg}>
                 <circle cx="26" cy="26" r="25" fill="none" className={styles.checkCircle} />
@@ -723,21 +667,17 @@ export default function EventPage() {
               Seu ingresso está pronto. Verifique seu e-mail para mais detalhes.
             </p>
 
-            {/* Card do ingresso */}
             <div className={styles.ticketCard}>
-
-              {/* Cabeçalho */}
               <div className={styles.tcHeader}>
                 <div>
                   <p className={styles.tcOrderLabel}>Número do Pedido</p>
                   <p className={styles.tcOrderNumber}>{orderCode}</p>
                 </div>
-                <span className={styles.tcBadge}>Confirmado ✓</span>
+                <span className={styles.tcBadge}><CheckIcon size={11} /> Confirmado</span>
               </div>
 
               <div className={styles.tcDividerDash} />
 
-              {/* Evento */}
               <div className={styles.tcSection}>
                 <p className={styles.tcLabel}>Evento</p>
                 <p className={styles.tcEventName}>{event.name}</p>
@@ -756,7 +696,6 @@ export default function EventPage() {
 
               <div className={styles.tcDividerDash} />
 
-              {/* QR Code */}
               <div className={styles.tcQrSection}>
                 <p className={styles.tcLabel}>Código do Ingresso</p>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -773,49 +712,45 @@ export default function EventPage() {
 
               <div className={styles.tcDividerDash} />
 
-              {/* Detalhes */}
               <div className={styles.tcMeta}>
                 <div className={styles.tcMetaRow}>
-                  <span className={styles.tcMetaLabel}>📅 Data do Evento</span>
+                  <span className={styles.tcMetaLabel}><CalendarIcon size={12} /> Data do Evento</span>
                   <span className={styles.tcMetaValue}>{dateStr}{timeStr && ` – ${timeStr}`}</span>
                 </div>
                 <div className={styles.tcMetaRow}>
-                  <span className={styles.tcMetaLabel}>📍 Local</span>
+                  <span className={styles.tcMetaLabel}><MapPinIcon size={12} /> Local</span>
                   <span className={styles.tcMetaValue}>{venue}</span>
                 </div>
                 <div className={styles.tcMetaRow}>
-                  <span className={styles.tcMetaLabel}>📧 E-mail de Confirmação</span>
+                  <span className={styles.tcMetaLabel}><MailIcon size={12} /> E-mail de Confirmação</span>
                   <span className={styles.tcMetaValue}>{form.email}</span>
                 </div>
               </div>
 
               <div className={styles.tcDividerDash} />
 
-              {/* Total */}
               <div className={styles.tcTotalRow}>
                 <span className={styles.tcTotalLabel}>Total Pago</span>
                 <span className={styles.tcTotalValue}>{formatCurrency(grandTotal, selectedTier!.currency)}</span>
               </div>
             </div>
 
-            {/* Ações */}
             <div className={styles.confirmActions}>
               <button id="btn-compartilhar" className={styles.btnContinue}>
-                🔗 Compartilhar Ingresso
+                <ShareIcon size={14} /> Compartilhar Ingresso
               </button>
             </div>
 
-            {/* Info boxes */}
             <div className={styles.infoBoxes}>
               <div className={styles.infoBox}>
-                <span className={styles.infoIcon}>⏰</span>
+                <ClockIcon size={20} className={styles.infoIcon} />
                 <div>
                   <p className={styles.infoTitle}>Chegue cedo</p>
                   <p className={styles.infoDesc}>Recomendamos chegar 30 min antes do início</p>
                 </div>
               </div>
               <div className={styles.infoBox}>
-                <span className={styles.infoIcon}>🔒</span>
+                <LockIcon size={20} className={styles.infoIcon} />
                 <div>
                   <p className={styles.infoTitle}>Sua segurança</p>
                   <p className={styles.infoDesc}>Ingresso válido com identificação obrigatória</p>
