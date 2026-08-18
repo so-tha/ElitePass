@@ -31,15 +31,20 @@ export function Navbar() {
             <span className={styles.logoText}>ElitePass</span>
           </Link>
 
+          <nav className={styles.navLinks}>
+            <Link href="/#shows" className={styles.navLink}>Shows</Link>
+            <Link href="/#filmes" className={styles.navLink}>Filmes</Link>
+          </nav>
+
           <div className={styles.navActions}>
             <a href="#criar" className={styles.navActionItem}>
               <PlusIcon size={15} />
               <span>Criar evento</span>
             </a>
-            <a href="#meus-ingressos" className={styles.navActionItem}>
+            <Link href="/tickets" className={styles.navActionItem}>
               <TicketIcon size={15} />
               <span>Meus ingressos</span>
-            </a>
+            </Link>
             {user ? (
               <UserMenu />
             ) : (
@@ -67,7 +72,7 @@ export function Navbar() {
           <Link href="/#shows" className={styles.mobileLink} onClick={close}>Shows</Link>
           <Link href="/#filmes" className={styles.mobileLink} onClick={close}>Filmes</Link>
           <a href="#criar" className={styles.mobileLink} onClick={close}>Criar evento</a>
-          <a href="#meus-ingressos" className={styles.mobileLink} onClick={close}>Meus ingressos</a>
+          <Link href="/tickets" className={styles.mobileLink} onClick={close}>Meus ingressos</Link>
 
           {user ? (
             <>

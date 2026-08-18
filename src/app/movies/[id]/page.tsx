@@ -6,6 +6,8 @@ import Link from "next/link";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
 import { Stepper } from "@/components/Stepper";
+import { useAuth } from "@/lib/auth-context";
+import type { CreateOrderPayload, CreateOrderResponse } from "@/app/api/orders/route";
 import {
   ClockIcon,
   CalendarIcon,
@@ -124,6 +126,7 @@ function isValidExpiry(e: string): boolean {
 export default function MoviePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { user, accessToken } = useAuth();
 
   const [movie, setMovie]   = useState<TMDBMovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -139,6 +142,7 @@ export default function MoviePage() {
   const [form, setForm] = useState({ name: "", email: "", cpf: "", card: "", expiry: "", cvv: "" });
   const [formErrors, setFormErrors] = useState<Partial<typeof form>>({});
   const [processing, setProcessing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
   const fetchMovie = useCallback(async () => {
     setLoading(true);
@@ -188,28 +192,42 @@ export default function MoviePage() {
 
   const handlePurchase = async () => {
     if (!validate()) return;
+    if (!user || !accessToken) {
+      setPurchaseError("Você precisa estar logado para finalizar a compra. Faça login pelo menu superior.");
+      return;
+    }
+
+    setPurchaseError(null);
     setProcessing(true);
-    await new Promise(r => setTimeout(r, 2200));
+    try {
+      const payload: CreateOrderPayload = {
+        eventId: `tmdb-${movie!.id}`,
+        eventType: "MOVIE",
+        eventName: movie!.title,
+        eventDate: movie!.release_date,
+        eventVenue: "Sessão no cinema",
+        tierId: selectedTier!.id,
+        tierLabel: selectedTier!.label,
+        priceUnit: selectedTier!.price,
+        quantity: qty,
+      };
 
-    const rand6 = () => Math.floor(100000 + Math.random() * 900000);
-    const now = new Date();
-    const yy = now.getFullYear();
-    const datePart = [
-      String(yy),
-      String(now.getMonth() + 1).padStart(2, "0"),
-      String(now.getDate()).padStart(2, "0"),
-    ].join("");
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify(payload),
+      });
+      const data: CreateOrderResponse & { error?: string } = await res.json();
+      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Não foi possível concluir a compra.");
 
-    const seq = rand6();
-    const order = `#ORD-${yy}-${seq}`;
-    const evPrefix = (movie?.title ?? "MOV").replace(/\s+/g, "").toUpperCase().slice(0, 3);
-    const tierPrefix = (selectedTier?.id ?? "NR").replace(/\s+/g, "").toUpperCase().slice(0, 2);
-    const ticket = `${evPrefix}-${tierPrefix}-${datePart}-${seq}`;
-
-    setOrderCode(order);
-    setTicketCode(ticket);
-    setProcessing(false);
-    setStep(3);
+      setOrderCode(data.order.id);
+      setTicketCode(data.order.tickets[0]?.code ?? "");
+      setStep(3);
+    } catch (err) {
+      setPurchaseError(err instanceof Error ? err.message : "Não foi possível concluir a compra.");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const total = selectedTier ? selectedTier.price * qty : 0;
@@ -428,6 +446,8 @@ export default function MoviePage() {
                 <span>Total</span>
                 <span className={styles.totalAmount}>{fmt(grandTotal)}</span>
               </div>
+              {purchaseError && <p className={styles.errorMsg}>{purchaseError}</p>}
+
               <button
                 className={styles.btnContinue}
                 id="btn-finalizar"

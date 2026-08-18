@@ -11,6 +11,7 @@ import eventsRoutes from "./routes/events.routes";
 import ordersRoutes from "./routes/orders.routes";
 import ticketsRoutes from "./routes/tickets.routes";
 import catalogRoutes from "./routes/catalog.routes";
+import accountRoutes from "./routes/account.routes";
 import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api/events", eventsRoutes);
 app.use("/api/orders", ordersRoutes);
 app.use("/api/tickets", ticketsRoutes);
 app.use("/api/catalog", catalogRoutes);
+app.use("/api/account", accountRoutes);
 
 app.get("/", (_req, res) => {
   res.json({ message: "ElitePass API is running!" });

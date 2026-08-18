@@ -56,6 +56,18 @@ model User {
   cpf       String   @unique
   password  String   // bcrypt hash
   role      Role     @default(CLIENT)
+
+  phone     String?
+  birthDate String?  // "YYYY-MM-DD"
+
+  addressCep          String?
+  addressStreet       String?
+  addressNumber       String?
+  addressComplement   String?
+  addressNeighborhood String?
+  addressCity         String?
+  addressState        String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -94,9 +106,11 @@ model Order {
   userId      String
   user        User        @relation(fields: [userId], references: [id])
 
-  // Evento (local ou externo Ticketmaster/TMDB)
-  eventId     String
-  event       Event?      @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  // Evento (local ou externo Ticketmaster/TMDB) — eventId nem sempre existe na tabela Event,
+  // por isso a relação usa localEventId (preenchido só quando o evento é local)
+  eventId      String
+  localEventId String?
+  event        Event?      @relation(fields: [localEventId], references: [id], onDelete: SetNull)
   eventType   EventType
   eventName   String
   eventDate   String?     // "YYYY-MM-DD"

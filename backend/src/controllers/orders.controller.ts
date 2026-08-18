@@ -65,7 +65,8 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       const newOrder = await tx.order.create({
         data: {
           userId,
-          eventId, eventType, eventName, eventDate, eventVenue,
+          eventId, localEventId: localEvent ? eventId : null,
+          eventType, eventName, eventDate, eventVenue,
           tierId, tierLabel, priceUnit, quantity, fee, totalAmount,
           status: "CONFIRMED",
         },
@@ -112,7 +113,7 @@ export async function getMyOrders(req: Request, res: Response): Promise<void> {
 
   const orders = await prisma.order.findMany({
     where:   { userId },
-    include: { tickets: true },
+    include: { tickets: true, event: true },
     orderBy: { createdAt: "desc" },
   });
 

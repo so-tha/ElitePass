@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
 import { Stepper } from "@/components/Stepper";
+import { useAuth } from "@/lib/auth-context";
+import type { CreateOrderPayload, CreateOrderResponse } from "@/app/api/orders/route";
 import {
   CalendarIcon,
   MapPinIcon,
@@ -163,6 +165,7 @@ function Skeleton() {
 export default function EventPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { user, accessToken } = useAuth();
 
   const [event, setEvent] = useState<TMEvent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,6 +182,7 @@ export default function EventPage() {
   const [form, setForm] = useState({ name: "", email: "", cpf: "", card: "", expiry: "", cvv: "" });
   const [formErrors, setFormErrors] = useState<Partial<typeof form>>({});
   const [processing, setProcessing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
   const fetchEvent = useCallback(async () => {
     setLoading(true);
@@ -291,31 +295,42 @@ export default function EventPage() {
 
   const handlePurchase = async () => {
     if (!validate()) return;
+    if (!user || !accessToken) {
+      setPurchaseError("Você precisa estar logado para finalizar a compra. Faça login pelo menu superior.");
+      return;
+    }
+
+    setPurchaseError(null);
     setProcessing(true);
-    await new Promise((r) => setTimeout(r, 2200));
+    try {
+      const payload: CreateOrderPayload = {
+        eventId: event!.id,
+        eventType: "SHOW",
+        eventName: event!.name,
+        eventDate: event!.dates.start.localDate,
+        eventVenue: getVenue(event!),
+        tierId: selectedTier!.id,
+        tierLabel: selectedTier!.label,
+        priceUnit: selectedTier!.price,
+        quantity: qty,
+      };
 
-    // Gera códigos únicos para cada compra
-    const rand6 = () => Math.floor(100000 + Math.random() * 900000);
-    const now   = new Date();
-    const yy    = now.getFullYear();
-    const datePart = [
-      String(now.getFullYear()),
-      String(now.getMonth() + 1).padStart(2, "0"),
-      String(now.getDate()).padStart(2, "0"),
-    ].join("");
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify(payload),
+      });
+      const data: CreateOrderResponse & { error?: string } = await res.json();
+      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Não foi possível concluir a compra.");
 
-    const seq    = rand6();
-    const order  = `#ORD-${yy}-${seq}`;
-
-    // Prefixo do código: 3 letras do evento + 2 letras do tier
-    const evPrefix   = (event?.name ?? "EVT").replace(/\s+/g, "").toUpperCase().slice(0, 3);
-    const tierPrefix = (selectedTier?.label ?? "PI").replace(/\s+/g, "").toUpperCase().slice(0, 2);
-    const ticket = `${evPrefix}-${tierPrefix}-${datePart}-${seq}`;
-
-    setOrderCode(order);
-    setTicketCode(ticket);
-    setProcessing(false);
-    setStep(3);
+      setOrderCode(data.order.id);
+      setTicketCode(data.order.tickets[0]?.code ?? "");
+      setStep(3);
+    } catch (err) {
+      setPurchaseError(err instanceof Error ? err.message : "Não foi possível concluir a compra.");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const total = selectedTier ? selectedTier.price * qty : 0;
@@ -623,6 +638,10 @@ export default function EventPage() {
                   <span>Total</span>
                   <span>{formatCurrency(grandTotal, selectedTier!.currency)}</span>
                 </div>
+
+                {purchaseError && (
+                  <p className={styles.fieldError} style={{ marginBottom: -4 }}>{purchaseError}</p>
+                )}
 
                 <button
                   id="btn-pagar"
