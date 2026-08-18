@@ -34,17 +34,11 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
 
   const { eventId, eventType, eventName, eventDate, eventVenue, tierId, quantity } = parse.data;
 
-  // tierLabel/priceUnit do corpo só são confiáveis para eventos externos
-  // (Ticketmaster/TMDB), cuja API de catálogo não expõe preço por tier. Para
-  // eventos locais, ambos são sempre sobrescritos pelo tier salvo no banco
-  // logo abaixo — o cliente nunca decide o próprio preço de compra.
   let { tierLabel, priceUnit } = parse.data;
 
-  // Transação: valida preço/capacidade e cria Order + Tickets atomicamente
   try {
     const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 
-      // Se o evento existir no banco de dados local, valida tier, preço e capacidade
       const localEvent = await tx.event.findUnique({ where: { id: eventId } });
       if (localEvent) {
         if (localEvent.status !== "PUBLISHED") {

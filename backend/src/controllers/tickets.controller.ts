@@ -4,12 +4,6 @@ import { verifyQrData } from "../lib/ticketCode";
 import { AuthenticatedRequest } from "../middlewares/requireAuth";
 import type { Prisma } from "../generated/client/client";
 
-/**
- * DOORMAN é staff geral de portaria e pode operar sobre qualquer ingresso.
- * ORGANIZER só pode operar sobre ingressos de eventos locais que ele mesmo
- * criou. Eventos externos (Ticketmaster/TMDB) não têm dono local no nosso
- * banco, então não há checagem de propriedade a aplicar nesse caso.
- */
 function organizerOwnsTicket(
   ticket: { order: { event: { organizerId: string } | null } },
   user: { userId: string; role: string }

@@ -1,5 +1,3 @@
-// `env` precisa ser o primeiro import: ele carrega e valida o .env antes de
-// qualquer outro módulo (ex: jwt.ts) ler process.env no seu escopo top-level.
 import { env } from "./config/env";
 
 import express from "express";

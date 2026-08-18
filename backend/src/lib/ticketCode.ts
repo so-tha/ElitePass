@@ -47,8 +47,6 @@ export function verifyQrData(qrData: string): { valid: boolean; code: string | n
     "utf8"
   );
 
-  // timingSafeEqual exige buffers do mesmo tamanho; um hash de tamanho
-  // diferente do esperado já é inválido, sem precisar comparar bytes.
   const valid = received.length === expected.length && crypto.timingSafeEqual(received, expected);
 
   return { valid, code };

@@ -1,11 +1,6 @@
 import "dotenv/config";
 import { z } from "zod";
 
-// Este módulo deve ser o primeiro a ser importado em qualquer arquivo que
-// precise de variáveis de ambiente: `import "dotenv/config"` acima garante
-// que o .env já foi carregado antes do schema abaixo ser avaliado, mesmo que
-// este módulo seja importado indiretamente (ex: por jwt.ts).
-
 const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
