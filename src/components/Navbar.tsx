@@ -3,10 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import styles from "./Navbar.module.css";
-import { PlusIcon, TicketIcon } from "./icons";
+import { PlusIcon, TicketIcon, UserIcon, HeartIcon, GridIcon, LogOutIcon } from "./icons";
 import { AuthModal } from "./AuthModal";
+import { UserMenu } from "./UserMenu";
+import { useAuth } from "@/lib/auth-context";
 
 export function Navbar() {
+  const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -42,13 +45,17 @@ export function Navbar() {
               <TicketIcon size={15} />
               <span>Meus ingressos</span>
             </a>
-            <button
-              type="button"
-              className={styles.btnAuth}
-              onClick={() => openAuth("login")}
-            >
-              Entrar / Cadastrar
-            </button>
+            {user ? (
+              <UserMenu />
+            ) : (
+              <button
+                type="button"
+                className={styles.btnAuth}
+                onClick={() => openAuth("login")}
+              >
+                Entrar / Cadastrar
+              </button>
+            )}
           </div>
 
           <button
@@ -66,14 +73,47 @@ export function Navbar() {
           <Link href="/#filmes" className={styles.mobileLink} onClick={close}>Filmes</Link>
           <a href="#criar" className={styles.mobileLink} onClick={close}>Criar evento</a>
           <a href="#meus-ingressos" className={styles.mobileLink} onClick={close}>Meus ingressos</a>
-          <button
-            type="button"
-            className={styles.mobileLink}
-            style={{ background: "none", border: "none", width: "100%", textAlign: "left", cursor: "pointer" }}
-            onClick={() => openAuth("login")}
-          >
-            Entrar / Cadastrar
-          </button>
+
+          {user ? (
+            <>
+              <a href="#minha-conta" className={styles.mobileLink} onClick={close}>
+                <UserIcon size={15} /> Minha conta
+              </a>
+              <a href="#favoritos" className={styles.mobileLink} onClick={close}>
+                <HeartIcon size={15} /> Favoritos
+              </a>
+              {user.role === "ORGANIZER" && (
+                <>
+                  <a href="#meus-eventos" className={styles.mobileLink} onClick={close}>
+                    <TicketIcon size={15} /> Meus eventos
+                  </a>
+                  <a href="#dashboard" className={styles.mobileLink} onClick={close}>
+                    <GridIcon size={15} /> Dashboard
+                  </a>
+                </>
+              )}
+              <button
+                type="button"
+                className={styles.mobileLink}
+                style={{ background: "none", border: "none", width: "100%", textAlign: "left", cursor: "pointer" }}
+                onClick={() => {
+                  close();
+                  logout();
+                }}
+              >
+                <LogOutIcon size={15} /> Sair
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className={styles.mobileLink}
+              style={{ background: "none", border: "none", width: "100%", textAlign: "left", cursor: "pointer" }}
+              onClick={() => openAuth("login")}
+            >
+              Entrar / Cadastrar
+            </button>
+          )}
         </div>
       </header>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import styles from "./AuthModal.module.css";
+import { useAuth } from "@/lib/auth-context";
 import {
   XIcon,
   MailIcon,
@@ -20,6 +21,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalProps) {
+  const { login } = useAuth();
   const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,6 +65,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "E-mail ou senha incorretos.");
+        login(data.user, data.accessToken);
         setSuccess("Login realizado com sucesso! Bem-vindo(a) de volta.");
         setTimeout(() => onClose(), 1200);
       } else {
@@ -78,6 +81,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
           const msg = typeof errObj === "string" ? errObj : "Verifique os dados informados.";
           throw new Error(msg);
         }
+        login(data.user, data.accessToken);
         setSuccess("Cadastro realizado com sucesso! Conectando...");
         setTimeout(() => onClose(), 1200);
       }
