@@ -34,15 +34,25 @@ function CardSkeleton() {
   );
 }
 
+const CITIES = [
+  "Todos os lugares",
+  "São Paulo, SP",
+  "Rio de Janeiro, RJ",
+  "Belo Horizonte, MG",
+  "Salvador, BA",
+  "Curitiba, PR",
+  "Recife, PE",
+  "Brasília, DF",
+];
 
 export default function Home() {
   const router = useRouter();
   const [events, setEvents] = useState<TMEvent[]>([]);
-  const [featured, setFeatured] = useState<TMEvent | null>(null);
   const [search, setSearch] = useState("");
+  const [selectedCity, setSelectedCity] = useState("Todos os lugares");
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
   const moviesRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +61,7 @@ export default function Home() {
   const [moviesLoading, setMoviesLoading] = useState(true);
   const [moviesError, setMoviesError] = useState<string | null>(null);
 
-  // Hero carousel state
+  // Coverflow carousel state
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroPaused, setHeroPaused] = useState(false);
   const heroTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -61,24 +71,25 @@ export default function Home() {
     | { type: "movie"; data: TMDBMovie };
 
   const heroItems = useMemo<HeroItem[]>(() => {
-    const eventItems: HeroItem[] = events.slice(0, 5).map(e => ({ type: "event", data: e }));
-    const movieItems: HeroItem[] = movies.slice(0, 5).map(m => ({ type: "movie", data: m }));
-    // Interleave: event, movie, event, movie...
+    const eventItems: HeroItem[] = events.slice(0, 5).map((e) => ({ type: "event", data: e }));
+    const movieItems: HeroItem[] = movies.slice(0, 5).map((m) => ({ type: "movie", data: m }));
     const result: HeroItem[] = [];
     const len = Math.max(eventItems.length, movieItems.length);
     for (let i = 0; i < len; i++) {
       if (eventItems[i]) result.push(eventItems[i]);
       if (movieItems[i]) result.push(movieItems[i]);
     }
-    return result.slice(0, 8);
+    return result.slice(0, 7);
   }, [events, movies]);
 
   useEffect(() => {
     if (heroItems.length <= 1 || heroPaused) return;
     heroTimerRef.current = setInterval(() => {
-      setHeroIndex(i => (i + 1) % heroItems.length);
-    }, 5000);
-    return () => { if (heroTimerRef.current) clearInterval(heroTimerRef.current); };
+      setHeroIndex((i) => (i + 1) % heroItems.length);
+    }, 4500);
+    return () => {
+      if (heroTimerRef.current) clearInterval(heroTimerRef.current);
+    };
   }, [heroItems.length, heroPaused]);
 
   const scroll = (ref: React.RefObject<HTMLDivElement | null>, direction: "left" | "right") => {
@@ -116,10 +127,8 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error ?? "Erro desconhecido");
-
       const list: TMEvent[] = data.events ?? [];
       setEvents(list);
-      if (list.length > 0) setFeatured(list[0]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar eventos.");
     } finally {
@@ -141,49 +150,94 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [search, fetchEvents]);
 
+  // 3D Coverflow positioning
+  const getCardStyle = (idx: number, activeIdx: number, total: number) => {
+    let diff = idx - activeIdx;
+    if (diff < -Math.floor(total / 2)) diff += total;
+    if (diff > Math.floor(total / 2)) diff -= total;
+
+    const absDiff = Math.abs(diff);
+
+    if (absDiff > 3) {
+      return {
+        transform: `translateX(${diff * 180}px) translateZ(-400px) scale(0.5)`,
+        opacity: 0,
+        pointerEvents: "none" as const,
+        zIndex: 0,
+      };
+    }
+
+    const rotateY = diff === 0 ? 0 : diff > 0 ? -28 : 28;
+    const translateX = diff * 185;
+    const translateZ = diff === 0 ? 120 : -absDiff * 90;
+    const scale = diff === 0 ? 1.05 : Math.max(0.7, 1 - absDiff * 0.15);
+    const opacity = diff === 0 ? 1 : Math.max(0.4, 1 - absDiff * 0.22);
+    const zIndex = 20 - absDiff * 5;
+    const filter = diff === 0 ? "brightness(1.05)" : `brightness(${Math.max(0.4, 0.75 - absDiff * 0.15)})`;
+
+    return {
+      transform: `perspective(1000px) translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
+      opacity,
+      zIndex,
+      filter,
+    };
+  };
+
+  const activeItem = heroItems[heroIndex];
+  const isActiveEvent = activeItem?.type === "event";
+  const activeEv = isActiveEvent ? (activeItem.data as TMEvent) : null;
+  const activeMv = !isActiveEvent && activeItem ? (activeItem.data as TMDBMovie) : null;
+
   return (
     <div className={styles.root}>
+      {/* ── SYMPLA-ADAPTED HEADER (ESTABLISHED DARK & GOLD PALETTE) ── */}
       <header className={styles.navbar}>
         <div className={styles.navInner}>
           <a href="/" className={styles.logo} id="logo-home">
+            <div className={styles.logoBadge}>EP</div>
             <span className={styles.logoText}>ElitePass</span>
           </a>
 
-          <nav className={`${styles.navLinks} ${menuOpen ? styles.navOpen : ""}`}>
-            <a href="#shows" className={styles.navLink} id="nav-shows">Shows</a>
-            <a href="#filmes" className={styles.navLink} id="nav-filmes">Filmes</a>
-            <a href="#festivais" className={styles.navLink} id="nav-festivais">Festivais</a>
-            <a href="#esportes" className={styles.navLink} id="nav-esportes">Esportes</a>
-            <a href="#teatro" className={styles.navLink} id="nav-teatro">Teatro</a>
-          </nav>
+          {/* Sympla-style Header Search + Location Container */}
 
-          <a href="#auth" className={styles.btnAuth} id="btn-entrar-cadastrar">
-            Entrar / Cadastrar
-          </a>
+          {/* Sympla-style Nav Actions */}
+          <div className={styles.navActions}>
+            <a href="#criar" className={styles.navActionItem} id="link-criar-evento">
+              <span className={styles.navActionIcon}>⊕</span>
+              <span>Criar evento</span>
+            </a>
+            <a href="#meus-eventos" className={styles.navActionItem} id="link-meus-eventos">
+              <span className={styles.navActionIcon}></span>
+              <span>Meus eventos</span>
+            </a>
+            <a href="#meus-ingressos" className={styles.navActionItem} id="link-meus-ingressos">
+              <span className={styles.navActionIcon}></span>
+              <span>Meus ingressos</span>
+            </a>
+            <a href="#auth" className={styles.btnAuth} id="btn-entrar-cadastrar">
+              Entrar / Cadastrar
+            </a>
+          </div>
 
-          <button
-            className={styles.menuToggle}
-            id="btn-menu-toggle"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Abrir menu"
-          >
+          <button className={styles.menuToggle} id="btn-menu-toggle" aria-label="Abrir menu">
             <span /><span /><span />
           </button>
         </div>
       </header>
 
       <main className={styles.main}>
-        {/* ───── BUSCA ───── */}
+        {/* ── PRESERVED MAIN SEARCH HERO BANNER ── */}
         <section className={styles.searchSection}>
           <h1 className={styles.searchHeading}>
             Encontre seu próximo <span className={styles.highlight}>evento</span>
           </h1>
           <div className={styles.searchBar}>
+            <span className={styles.searchIcon}>🔍</span>
             <input
-              id="input-busca"
+              id="input-busca-main"
               type="text"
               className={styles.searchInput}
-              placeholder="Buscar shows, artistas ou locais..."
+              placeholder="Buscar eventos"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoComplete="off"
@@ -191,7 +245,7 @@ export default function Home() {
             {search && (
               <button
                 className={styles.searchClear}
-                id="btn-limpar-busca"
+                id="btn-limpar-busca-main"
                 onClick={() => setSearch("")}
                 aria-label="Limpar busca"
               >
@@ -201,108 +255,125 @@ export default function Home() {
           </div>
         </section>
 
-        {error && (
-          <div className={styles.errorBanner}>
-            ⚠️ {error}
-          </div>
-        )}
+        {error && <div className={styles.errorBanner}>⚠️ {error}</div>}
 
-        {/* ── HERO CAROUSEL ── */}
+        {/* ── 3D COVERFLOW HERO CAROUSEL (SYMPLA-STYLE ADAPTATION) ── */}
         <section
-          className={styles.heroCarousel}
+          className={styles.coverflowSection}
           onMouseEnter={() => setHeroPaused(true)}
           onMouseLeave={() => setHeroPaused(false)}
         >
           {loading && moviesLoading ? (
-            <div className={`${styles.heroSlide} ${styles.skeleton}`} />
+            <div className={`${styles.coverflowCard} ${styles.skeleton}`} style={{ position: "relative" }} />
           ) : heroItems.length === 0 ? null : (
             <>
-              {heroItems.map((item, idx) => {
-                const isEvent = item.type === "event";
-                const ev = isEvent ? (item.data as TMEvent) : null;
-                const mv = !isEvent ? (item.data as TMDBMovie) : null;
+              {/* Coverflow Track */}
+              <div className={styles.coverflowTrack}>
+                {heroItems.map((item, idx) => {
+                  const isEvent = item.type === "event";
+                  const ev = isEvent ? (item.data as TMEvent) : null;
+                  const mv = !isEvent ? (item.data as TMDBMovie) : null;
 
-                const imgUrl = isEvent
-                  ? getBestImage(ev!.images)
-                  : `https://image.tmdb.org/t/p/w1280${mv!.backdrop_path ?? mv!.poster_path ?? ""}`;
-                const badge  = isEvent ? getCategory(ev!) : (GENRE_MAP[mv!.genre_ids?.[0]] ?? "Filme");
-                const artist = isEvent ? getArtistName(ev!) : "";
-                const title  = isEvent ? ev!.name : mv!.title;
-                const meta1  = isEvent
-                  ? `📅 ${formatDate(ev!.dates.start.localDate)}`
-                  : `⭐ ${mv!.vote_average.toFixed(1)} · ${mv!.vote_count.toLocaleString()} avaliações`;
-                const meta2  = isEvent ? `📍 ${getVenue(ev!)}` : `📅 ${formatMovieDate(mv!.release_date)}`;
-                const price  = isEvent ? formatPrice(ev!) : formatMoviePrice(mv!);
-                const href   = isEvent ? `/events/${ev!.id}` : `/movies/${mv!.id}`;
-                const typeLabel = isEvent ? "🎵 Show" : "🎬 Filme";
+                  const imgUrl = isEvent
+                    ? getBestImage(ev!.images)
+                    : `https://image.tmdb.org/t/p/w780${mv!.poster_path ?? mv!.backdrop_path ?? ""}`;
+                  const badge = isEvent ? getCategory(ev!) : GENRE_MAP[mv!.genre_ids?.[0]] ?? "Filme";
+                  const title = isEvent ? ev!.name : mv!.title;
+                  const typeLabel = isEvent ? "SHOW" : "FILME";
+                  const isActive = idx === heroIndex;
+                  const cardStyle = getCardStyle(idx, heroIndex, heroItems.length);
 
-                return (
-                  <div
-                    key={idx}
-                    className={`${styles.heroSlide} ${idx === heroIndex ? styles.heroSlideActive : ""}`}
-                    aria-hidden={idx !== heroIndex}
-                  >
-                    <div className={styles.heroSlideBg} style={{ backgroundImage: `url(${imgUrl})` }} />
-                    <div className={styles.heroSlideOverlay} />
-                    <div className={styles.heroSlideContent}>
-                      <div className={styles.heroSlideType}>{typeLabel}</div>
-                      <span className={styles.featuredBadge}>{badge}</span>
-                      {artist && <p className={styles.featuredArtist}>{artist}</p>}
-                      <h2 className={styles.featuredTitle}>{title}</h2>
-                      <div className={styles.featuredMeta}>
-                        <span>{meta1}</span>
-                        <span>{meta2}</span>
-                      </div>
-                      <div className={styles.featuredFooter}>
-                        <div>
-                          <p className={styles.priceLabel}>A partir de</p>
-                          <p className={styles.priceValue}>{price}</p>
+                  return (
+                    <div
+                      key={idx}
+                      className={`${styles.coverflowCard} ${isActive ? styles.coverflowCardActive : ""}`}
+                      style={cardStyle}
+                      onClick={() => setHeroIndex(idx)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={imgUrl} alt={title} className={styles.coverflowCardImg} loading="lazy" />
+                      <div className={styles.coverflowCardOverlay}>
+                        <div className={styles.cardTopBadges}>
+                          <span className={styles.coverflowBadge}>{badge}</span>
+                          <span className={styles.coverflowTypeBadge}>{typeLabel}</span>
                         </div>
-                        <button
-                          className={styles.btnEmbarcar}
-                          id={`btn-hero-${idx}`}
-                          onClick={() => router.push(href)}
-                        >
-                          Comprar Ingresso
-                        </button>
+                        <h3 className={styles.cardCardTitle}>{title}</h3>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
 
-              {/* Dot indicators */}
-              <div className={styles.heroDots}>
-                {heroItems.map((_, idx) => (
-                  <button
-                    key={idx}
-                    className={`${styles.heroDot} ${idx === heroIndex ? styles.heroDotActive : ""}`}
-                    onClick={() => { setHeroIndex(idx); setHeroPaused(true); setTimeout(() => setHeroPaused(false), 8000); }}
-                    aria-label={`Slide ${idx + 1}`}
-                  />
-                ))}
+                {/* Left/Right Arrow Controls */}
+                <button
+                  className={`${styles.coverflowArrow} ${styles.coverflowArrowLeft}`}
+                  onClick={() => setHeroIndex((i) => (i - 1 + heroItems.length) % heroItems.length)}
+                  aria-label="Anterior"
+                >
+                  ‹
+                </button>
+                <button
+                  className={`${styles.coverflowArrow} ${styles.coverflowArrowRight}`}
+                  onClick={() => setHeroIndex((i) => (i + 1) % heroItems.length)}
+                  aria-label="Próximo"
+                >
+                  ›
+                </button>
               </div>
 
-              {/* Arrow controls */}
-              <button
-                className={`${styles.heroArrow} ${styles.heroArrowLeft}`}
-                onClick={() => { setHeroIndex(i => (i - 1 + heroItems.length) % heroItems.length); }}
-                aria-label="Anterior"
-              >‹</button>
-              <button
-                className={`${styles.heroArrow} ${styles.heroArrowRight}`}
-                onClick={() => { setHeroIndex(i => (i + 1) % heroItems.length); }}
-                aria-label="Próximo"
-              >›</button>
+              {/* Coverflow Dots & Active Item Details */}
+              {activeItem && (
+                <div className={styles.coverflowFooter}>
+                  <div className={styles.dotsContainer}>
+                    {heroItems.map((_, idx) => (
+                      <button
+                        key={idx}
+                        className={`${styles.dot} ${idx === heroIndex ? styles.dotActive : ""}`}
+                        onClick={() => setHeroIndex(idx)}
+                        aria-label={`Ir para slide ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                  <h2 className={styles.activeTitle}>
+                    {isActiveEvent ? activeEv!.name : activeMv!.title}
+                  </h2>
+
+                  <div className={styles.activeMeta}>
+                    {isActiveEvent ? (
+                      <>
+                        <span className={styles.metaItem}>📍 {getVenue(activeEv!)}</span>
+                        <span className={styles.metaItem}>📅 {formatDate(activeEv!.dates.start.localDate)}</span>
+                        <span className={styles.metaItem}>🎟️ {formatPrice(activeEv!)}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className={styles.metaItem}>🎬 Nos cinemas</span>
+                        <span className={styles.metaItem}>⭐ {activeMv!.vote_average.toFixed(1)} / 10</span>
+                        <span className={styles.metaItem}>📅 Lançamento: {formatMovieDate(activeMv!.release_date)}</span>
+                      </>
+                    )}
+                  </div>
+
+                  <button
+                    className={styles.btnBuyHero}
+                    onClick={() =>
+                      router.push(isActiveEvent ? `/events/${activeEv!.id}` : `/movies/${activeMv!.id}`)
+                    }
+                  >
+                    Comprar Ingresso
+                  </button>
+                </div>
+              )}
             </>
           )}
         </section>
 
+        {/* ── SHOWS IN CAROUSEL ── */}
         {!error && (
           <section className={styles.showsSection}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
-                {search ? `Resultados para "${search}"` : "Shows em Cartaz"}
+                {search ? `Resultados para "${search}"` : "Shows e Eventos em Cartaz"}
               </h2>
               {loading && <span className={styles.loadingDot}>Buscando...</span>}
             </div>
@@ -322,41 +393,43 @@ export default function Home() {
                   {loading
                     ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
                     : events.map((event) => (
-                      <div
-                        key={event.id}
-                        className={styles.showCard}
-                        id={`card-show-${event.id}`}
-                        onClick={() => router.push(`/events/${event.id}`)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        <div className={styles.cardImage}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={getBestImage(event.images)}
-                            alt={event.name}
-                            className={styles.cardImg}
-                            loading="lazy"
-                          />
-                          <span className={styles.cardBadge}>{getCategory(event)}</span>
-                        </div>
-                        <div className={styles.cardBody}>
-                          <p className={styles.cardArtist}>{getArtistName(event)}</p>
-                          <p className={styles.cardTitle}>{event.name}</p>
-                          <p className={styles.cardDate}>📅 {formatDate(event.dates.start.localDate)}</p>
-                          <p className={styles.cardVenue}>📍 {getVenue(event)}</p>
-                          <div className={styles.cardFooter}>
-                            <span className={styles.cardPrice}>{formatPrice(event)}</span>
-                            <button
-                              className={styles.btnCard}
-                              id={`btn-confira-${event.id}`}
-                              onClick={(e) => { e.stopPropagation(); router.push(`/events/${event.id}`); }}
-                            >
-                              Comprar
-                            </button>
+                        <div
+                          key={event.id}
+                          className={styles.showCard}
+                          id={`card-show-${event.id}`}
+                          onClick={() => router.push(`/events/${event.id}`)}
+                        >
+                          <div className={styles.cardImage}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={getBestImage(event.images)}
+                              alt={event.name}
+                              className={styles.cardImg}
+                              loading="lazy"
+                            />
+                            <span className={styles.cardBadge}>{getCategory(event)}</span>
+                          </div>
+                          <div className={styles.cardBody}>
+                            <p className={styles.cardArtist}>{getArtistName(event)}</p>
+                            <p className={styles.cardTitle}>{event.name}</p>
+                            <p className={styles.cardDate}>📅 {formatDate(event.dates.start.localDate)}</p>
+                            <p className={styles.cardVenue}>📍 {getVenue(event)}</p>
+                            <div className={styles.cardFooter}>
+                              <span className={styles.cardPrice}>{formatPrice(event)}</span>
+                              <button
+                                className={styles.btnCard}
+                                id={`btn-confira-${event.id}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/events/${event.id}`);
+                                }}
+                              >
+                                Comprar
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                 </div>
                 <button
                   className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
@@ -369,10 +442,11 @@ export default function Home() {
             )}
           </section>
         )}
+
         {/* ── MOVIES IN THEATRES ── */}
         <section id="filmes" className={styles.showsSection}>
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>🎬 Filmes em Cartaz</h2>
+            <h2 className={styles.sectionTitle}>Filmes em Cartaz</h2>
             {moviesLoading && <span className={styles.loadingDot}>Carregando...</span>}
           </div>
 
@@ -393,43 +467,45 @@ export default function Home() {
                 {moviesLoading
                   ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
                   : movies.map((movie) => (
-                    <div
-                      key={movie.id}
-                      className={styles.showCard}
-                      id={`card-movie-${movie.id}`}
-                      onClick={() => router.push(`/movies/${movie.id}`)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <div className={styles.cardImage}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={tmdbPoster(movie.poster_path)}
-                          alt={movie.title}
-                          className={styles.cardImg}
-                          loading="lazy"
-                        />
-                        <span className={styles.cardBadge}>
-                          {movie.genre_ids?.[0] ? (GENRE_MAP[movie.genre_ids[0]] ?? "Filme") : "Filme"}
-                        </span>
-                      </div>
-                      <div className={styles.cardBody}>
-                        <p className={styles.cardArtist}>⭐ {movie.vote_average.toFixed(1)}</p>
-                        <p className={styles.cardTitle}>{movie.title}</p>
-                        <p className={styles.cardDate}>📅 {formatMovieDate(movie.release_date)}</p>
-                        <p className={styles.cardVenue}>🎬 No cinema</p>
-                        <div className={styles.cardFooter}>
-                          <span className={styles.cardPrice}>{formatMoviePrice(movie)}</span>
-                          <button
-                            className={styles.btnCard}
-                            id={`btn-comprar-movie-${movie.id}`}
-                            onClick={(e) => { e.stopPropagation(); router.push(`/movies/${movie.id}`); }}
-                          >
-                            Comprar
-                          </button>
+                      <div
+                        key={movie.id}
+                        className={styles.showCard}
+                        id={`card-movie-${movie.id}`}
+                        onClick={() => router.push(`/movies/${movie.id}`)}
+                      >
+                        <div className={styles.cardImage}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={tmdbPoster(movie.poster_path)}
+                            alt={movie.title}
+                            className={styles.cardImg}
+                            loading="lazy"
+                          />
+                          <span className={styles.cardBadge}>
+                            {movie.genre_ids?.[0] ? GENRE_MAP[movie.genre_ids[0]] ?? "Filme" : "Filme"}
+                          </span>
+                        </div>
+                        <div className={styles.cardBody}>
+                          <p className={styles.cardArtist}>⭐ {movie.vote_average.toFixed(1)}</p>
+                          <p className={styles.cardTitle}>{movie.title}</p>
+                          <p className={styles.cardDate}>📅 {formatMovieDate(movie.release_date)}</p>
+                          <p className={styles.cardVenue}>🎬 No cinema</p>
+                          <div className={styles.cardFooter}>
+                            <span className={styles.cardPrice}>{formatMoviePrice(movie)}</span>
+                            <button
+                              className={styles.btnCard}
+                              id={`btn-comprar-movie-${movie.id}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/movies/${movie.id}`);
+                              }}
+                            >
+                              Comprar
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
               </div>
               <button
                 className={`${styles.sideNavBtn} ${styles.sideNavRight}`}

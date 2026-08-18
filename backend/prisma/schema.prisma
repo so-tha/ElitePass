@@ -1,17 +1,19 @@
 // ============================================================
 // ElitePass — Prisma Schema
-// Models: User, Order, Ticket
+// Models: User, Event, Order, Ticket
 // ============================================================
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/client"
 }
+
+
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
+
 
 // ─── Enums ───────────────────────────────────────────────────
 
@@ -24,6 +26,13 @@ enum Role {
 enum EventType {
   SHOW
   MOVIE
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
 }
 
 enum OrderStatus {
@@ -51,6 +60,33 @@ model User {
   updatedAt DateTime @updatedAt
 
   orders    Order[]
+  events    Event[]
+}
+
+model Event {
+  id          String      @id @default(uuid())
+  organizerId String
+  organizer   User        @relation(fields: [organizerId], references: [id])
+
+  title       String
+  description String?
+  category    String      // Pop, Rock, Sertanejo, Cinema, etc.
+  type        EventType   @default(SHOW)
+  imageUrl    String?
+  venue       String
+  city        String
+  date        DateTime
+
+  capacity    Int         // Capacidade total de ingressos
+  soldCount   Int         @default(0) // Ingressos já vendidos
+
+  tiers       Json        // Array de tiers: [{ id, label, priceUnit, capacity }]
+
+  status      EventStatus @default(PUBLISHED)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  orders      Order[]
 }
 
 model Order {
@@ -58,11 +94,12 @@ model Order {
   userId      String
   user        User        @relation(fields: [userId], references: [id])
 
-  // Evento externo (Ticketmaster ou TMDB — ID e nome armazenados localmente)
+  // Evento (local ou externo Ticketmaster/TMDB)
   eventId     String
+  event       Event?      @relation(fields: [eventId], references: [id], onDelete: SetNull)
   eventType   EventType
   eventName   String
-  eventDate   String?     // "YYYY-MM-DD" (pode ser nulo para filmes)
+  eventDate   String?     // "YYYY-MM-DD"
   eventVenue  String?
 
   // Tier e preços
@@ -97,3 +134,4 @@ model Ticket {
   @@index([code])
   @@index([shareToken])
 }
+

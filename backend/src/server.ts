@@ -1,21 +1,61 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
+// `env` precisa ser o primeiro import: ele carrega e valida o .env antes de
+// qualquer outro módulo (ex: jwt.ts) ler process.env no seu escopo top-level.
+import { env } from "./config/env";
 
-dotenv.config();
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
+import { authLimiter, ticketValidationLimiter } from "./middlewares/rateLimiters";
+
+import authRoutes from "./routes/auth.routes";
+import eventsRoutes from "./routes/events.routes";
+import ordersRoutes from "./routes/orders.routes";
+import ticketsRoutes from "./routes/tickets.routes";
+import catalogRoutes from "./routes/catalog.routes";
+import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(helmet());
+app.use(
+  cors({
+    origin: env.FRONTEND_URL ?? "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
-app.get('/', (req, res) => {
-  res.json({ message: 'ElitePass API is running!' });
+// ─── API Routes ────────────────────────────────────────────────
+app.use("/api/auth/login", authLimiter);
+app.use("/api/auth/register", authLimiter);
+app.use("/api/tickets/validate", ticketValidationLimiter);
+
+app.use("/api/auth", authRoutes);
+app.use("/api/events", eventsRoutes);
+app.use("/api/orders", ordersRoutes);
+app.use("/api/tickets", ticketsRoutes);
+app.use("/api/catalog", catalogRoutes);
+
+app.get("/", (_req, res) => {
+  res.json({ message: "ElitePass API is running!" });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", service: "ElitePass Backend API" });
+});
+
+// Rotas não mapeadas
+app.use((_req, res) => {
+  res.status(404).json({ error: "Rota não encontrada." });
+});
+
+// Handler global de erros
+app.use(errorHandler);
+
+app.listen(env.PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${env.PORT}`);
 });
 
 export default app;

@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { env } from "../config/env";
 
 /**
  * Gera um código de ingresso único e legível.
@@ -28,8 +29,7 @@ export function generateTicketCode(eventName: string, tierLabel: string): string
  * O QR carrega o próprio code + assinatura para dificultar falsificações.
  */
 export function generateQrData(ticketCode: string): string {
-  const secret = process.env.TICKET_HMAC_SECRET ?? "elitepass_qr_secret_change_me";
-  const hmac   = crypto.createHmac("sha256", secret).update(ticketCode).digest("hex").slice(0, 16);
+  const hmac = crypto.createHmac("sha256", env.TICKET_HMAC_SECRET).update(ticketCode).digest("hex").slice(0, 16);
   return `EP:${ticketCode}:${hmac}`;
 }
 
@@ -41,12 +41,15 @@ export function verifyQrData(qrData: string): { valid: boolean; code: string | n
   if (parts.length !== 3 || parts[0] !== "EP") return { valid: false, code: null };
 
   const code     = parts[1];
-  const received = parts[2];
-  const secret   = process.env.TICKET_HMAC_SECRET ?? "elitepass_qr_secret_change_me";
-  const expected = crypto.createHmac("sha256", secret).update(code).digest("hex").slice(0, 16);
+  const received = Buffer.from(parts[2], "utf8");
+  const expected = Buffer.from(
+    crypto.createHmac("sha256", env.TICKET_HMAC_SECRET).update(code).digest("hex").slice(0, 16),
+    "utf8"
+  );
 
-  return {
-    valid: crypto.timingSafeEqual(Buffer.from(received, "utf8"), Buffer.from(expected, "utf8")),
-    code,
-  };
+  // timingSafeEqual exige buffers do mesmo tamanho; um hash de tamanho
+  // diferente do esperado já é inválido, sem precisar comparar bytes.
+  const valid = received.length === expected.length && crypto.timingSafeEqual(received, expected);
+
+  return { valid, code };
 }

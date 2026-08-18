@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "../prisma";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
+import { AuthenticatedRequest } from "../middlewares/requireAuth";
+
 
 // ─── Schemas de validação ─────────────────────────────────────
 
@@ -111,3 +113,21 @@ export async function refresh(req: Request, res: Response): Promise<void> {
 export async function logout(_req: Request, res: Response): Promise<void> {
   res.clearCookie("refreshToken").json({ message: "Logout realizado com sucesso." });
 }
+
+/** GET /auth/me */
+export async function getMe(req: Request, res: Response): Promise<void> {
+  const { userId } = (req as AuthenticatedRequest).user;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, cpf: true, role: true, createdAt: true },
+  });
+
+  if (!user) {
+    res.status(404).json({ error: "Usuário não encontrado." });
+    return;
+  }
+
+  res.json({ user });
+}
+

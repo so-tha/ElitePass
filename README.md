@@ -16,31 +16,36 @@ O **ElitePass** é uma plataforma de compra e gestão de ingressos para shows e 
 
 ---
 
-## 🗺️ Funcionalidades Planejadas
+## 🗺️ Status de Funcionalidades
 
 ### Frontend (cliente)
 - [x] Navegação e busca de eventos (shows em cartaz, data, local, preço)
 - [x] Página de detalhe do evento
 - [x] Fluxo de compra com pagamento simulado
-- [ ] Ingresso digital com QR Code
-- [ ] Compartilhamento de ingresso por link
-- [ ] Área do cliente (meus ingressos)
+- [x] Ingresso digital com QR Code
+- [x] Compartilhamento de ingresso por link
+- [x] Área do cliente (meus ingressos)
 
 ### Frontend (organizador)
-- [ ] Dashboard de criação e gestão de eventos
-- [ ] Integração com API externa de shows/catálogo
-- [ ] Controle de capacidade e vendas em tempo real
+- [ ] Dashboard de criação e gestão de eventos (em progresso)
+- [x] Integração com API externa de shows/catálogo
+- [ ] Controle de capacidade e vendas em tempo real (em progresso)
 
 ### Frontend (portaria)
-- [ ] Leitor de QR Code para validação de ingresso na entrada
+- [ ] Leitor de QR Code para validação de ingresso na entrada (em progresso)
 
-### Backend (API Node.js)
-- [ ] Autenticação JWT com três perfis (cliente, organizador, portaria)
-- [ ] CRUD de eventos
-- [ ] Integração com API externa de catálogo de shows
-- [ ] Fluxo de compra e emissão de ingresso
-- [ ] Geração e validação de QR Code
-- [ ] Controle de capacidade e prevenção de venda duplicada (PostgreSQL + transações ACID)
+### Backend (API Node.js) — 📋 [Veja o ROADMAP Backend](./backend/ROADMAP.md)
+- [x] Autenticação JWT com três perfis (cliente, organizador, portaria)
+- [x] CRUD de eventos e setores/tiers (Organizador)
+- [x] Integração/Proxy com API externa de catálogo de shows (Ticketmaster) e filmes (TMDB)
+- [x] Fluxo de compra e emissão de ingresso digital
+- [x] Geração e validação presencial de QR Code com assinatura HMAC-SHA256
+- [x] Controle de capacidade e prevenção de venda duplicada (PostgreSQL + transações ACID)
+- [x] Painel de estatísticas, faturamento e ocupação em tempo real para Organizadores
+- [x] **Validação server-side de preços de tiers** (segurança contra manipulação de valores)
+- [x] **Rate limiting** em autenticação e validação de ingressos
+- [x] **Hardening de segurança** (Helmet, CORS explícito, validação de env vars, tratamento de erros Prisma)
+
 
 ---
 
@@ -96,13 +101,16 @@ Reservado para **textos de leitura rápida**, labels de formulário e ícones si
 - 🟦 **TypeScript** — Tipagem estática para maior segurança e produtividade
 
 ### Backend
-- 🟩 **Node.js** — Runtime JavaScript para a API e lógica de negócio do servidor
+- 🟩 **Node.js** 20.19.0+ — Runtime JavaScript para a API e lógica de negócio do servidor
 - 🚂 **Express** — Framework minimalista para criação das rotas da API REST
-- 🟦 **TypeScript** — Tipagem no backend para consistência com o frontend
+- 🟦 **TypeScript** 5.4.0+ — Tipagem estática no backend para consistência com o frontend
+- 🛡️ **Helmet** — Middleware de segurança HTTP (headers de proteção)
+- ⏱️ **express-rate-limit** — Rate limiting em autenticação e endpoints críticos
+- 🔐 **Zod** — Validação e parsing de tipos (env vars, schemas de entrada)
 
 ### Banco de Dados
-- 🐘 **PostgreSQL** — Banco de dados relacional com suporte a transações ACID (essencial para pagamentos)
-- 🔷 **Prisma ORM** — Interface elegante entre o Node.js e o PostgreSQL, com migrations e Prisma Studio
+- 🐘 **PostgreSQL** — Banco de dados relacional com suporte a transações ACID (essencial para pagamentos e overselling prevention)
+- 🔷 **Prisma ORM v7** — Interface elegante com driver adapter (`@prisma/adapter-pg`), migrations e Prisma Studio
 
 ### Ferramentas & Infra
 - **Git & GitHub** — Controle de versão e repositório remoto
@@ -110,85 +118,92 @@ Reservado para **textos de leitura rápida**, labels de formulário e ícones si
 
 ---
 
-## ⚠️ Limitação da API & Solução de Preços Simulados
+## 💰 Modelo de Preços & Eventos Locais vs. Externos
 
-### O problema
+### Eventos Locais (Criados por Organizadores)
 
-O ElitePass consome a **Ticketmaster Discovery API v2** para buscar eventos reais. Em março de 2025, a Ticketmaster **removeu globalmente o campo `priceRanges`** da resposta padrão dessa API:
+Os organizadores criam eventos diretamente na plataforma com:
+- **Tiers customizados** — setores com preço, capacidade e label (ex: "Pista", "Meia-renda", "VIP")
+- **Validação server-side** — qualquer compra sempre valida o preço contra o tier salvo no banco; o cliente **nunca pode escolher seu próprio preço**
+- **Preço imutável durante transação** — mesmo que o organizador mude o preço após o cliente iniciar a compra, a transação ACID garante que só o preço salvo é cobrado
 
-```json
-// Resposta real da API para eventos BR (após mar/2025)
-{
-  "id": "ZFIMVHtnMZ17FKC4",
-  "name": "Diego Besou | Rica de Experiência - Teatro da Ilha",
-  "priceRanges": null   // ← campo ausente em praticamente todos os eventos
-}
-```
+### Eventos Externos (Ticketmaster & TMDB)
 
-Isso significa que a **Discovery API** — camada gratuita e pública — não retorna mais valores de ingressos. Os preços reais estão disponíveis apenas na **Commerce API**, que exige aprovação comercial e não faz parte do tier gratuito.
+O ElitePass consome **APIs externas de catálogo** para buscar shows e filmes em cartaz:
 
-Tentativas de contorno avaliadas:
+| Fonte | Acesso | Situação |
+|-------|--------|----------|
+| **Ticketmaster Discovery API v2** | Gratuita + pública | Não retorna `priceRanges` (removido globalmente em mar/2025) |
+| **TMDB (The Movie Database)** | Gratuita + pública | Catálogo apenas; sem dados de preço |
 
-| Abordagem | Viabilidade | Motivo da descartada |
-|---|---|---|
-| Commerce API (Ticketmaster) | ❌ | Requer aprovação manual e é paga |
-| Web scraping do site oficial | ❌ | Viola os Termos de Serviço + CAPTCHA anti-bot |
-| **Preços simulados determinísticos** | ✅ | Ideal para demo sem venda real |
+Para esses eventos, o cliente insere um **preço simulado** no frontend que é aceito pela API (não há preço real a validar). Depois, o server valida a coerência da transação (capacidade, formato de valor, etc.) — não o valor em si, pois a API externa não o expõe.
 
----
+**Fluxo funcional end-to-end** para demonstração: busca de catálogo, seleção de ingresso, cálculo de taxa (12%), checkout com QR Code validado — tudo sem venda real integrada.
 
-### A solução: `generateMockPrices`
-
-Foi implementada a função `generateMockPrices` em [`src/lib/ticketmaster.ts`](./src/lib/ticketmaster.ts), que gera faixas de preços realistas em BRL de forma **determinística** — ou seja, o mesmo evento **sempre produz o mesmo preço** entre renders, sessões e builds.
-
-**Como funciona:**
-
-1. **Seed pelo `event.id`** — o ID único do evento é usado como semente para um hash numérico (`seededRandom`), garantindo consistência total.
-2. **Tabela de preços por categoria** — os valores de base variam conforme o segmento e gênero do evento, refletindo o mercado brasileiro:
-
-| Segmento / Gênero | Faixa Base (BRL) |
-|---|---|
-| Música — Pop / Rock | R$ 120 – R$ 500 |
-| Música — Sertanejo / Country | R$ 80 – R$ 380 |
-| Música — Eletrônica | R$ 100 – R$ 450 |
-| Música — Jazz / Blues | R$ 60 – R$ 220 |
-| Esportes | R$ 50 – R$ 300 |
-| Teatro / Arte | R$ 60 – R$ 280 |
-| Família | R$ 60 – R$ 250 |
-| Outros | R$ 80 – R$ 350 |
-
-3. **Três tiers automáticos** — a partir da faixa base, são gerados três preços escalonados:
-   - **Pista** → extremo inferior da faixa
-   - **Pista Premium** → ponto médio
-   - **VIP** → extremo superior
-
-4. **Transparência na UI** — quando os preços são simulados, a interface exibe:
-   - Prefixo `~` antes do valor (ex.: `~R$ 70,00`) e label "estimado" no card
-   - Badge discreto `⚠️ Preços simulados — apenas para demonstração` no painel de resumo
-
-**O fluxo de compra permanece 100% funcional** para fins de demonstração: seleção de tier, ajuste de quantidade, cálculo de taxa de serviço (12%), checkout com formulário validado e tela de confirmação com QR Code simulado.
-
-> 💡 **Nota:** Caso a Ticketmaster volte a retornar `priceRanges` na Discovery API, o sistema detecta automaticamente a presença do campo e usa os preços reais — sem nenhuma alteração de código necessária. O mock só é ativado como fallback quando o campo está ausente.
+> 💡 **Para produção:** Uma integração com **Commerce API** (Ticketmaster) ou **gateway de pagamento** (Stripe, PayPal) substituiria os preços simulados por valores reais. A arquitetura já suporta isso.
 
 ---
 
+## 🔒 Segurança & Arquitetura
+
+### Camadas de Proteção Implementadas
+
+| Camada | Mecanismo | Detalhe |
+|--------|-----------|--------|
+| **Configuração de Env** | Zod + validação no startup | Falha rápida se variáveis obrigatórias ausentes; segredos não têm fallback hardcoded |
+| **HTTP Headers** | Helmet | `X-Content-Type-Options`, `Strict-Transport-Security`, `X-Frame-Options` etc. |
+| **CORS** | Origem explícita | Apenas frontend autorizado pode fazer requisições com cookies |
+| **Rate Limiting** | express-rate-limit | 10 req/15min em login/registro; 30 req/60s em validação de ingressos |
+| **Autenticação** | JWT em memória + Refresh Token em cookie HttpOnly | Access token curta vida (15m); refresh token seguro (7d, HttpOnly, SameSite=Strict) |
+| **Autorização** | RBAC (Role-Based Access Control) | CLIENT, ORGANIZER, DOORMAN com checagens granulares de propriedade |
+| **Validação de Preços** | Server-side | Preços de tiers local sempre validados contra o banco; cliente nunca decide seu próprio preço |
+| **Geração de Ingressos** | HMAC-SHA256 em transação ACID | QR Code com assinatura criptográfica; falsificação requer a chave secreta |
+| **Overselling Prevention** | Transações Prisma + Lock | `soldCount` incrementado atomicamente; corridas de compra resolvidas no banco |
+| **Tratamento de Erros** | Prisma error codes + stack traces | P2002 (duplicado) → 409; P2025 (não encontrado) → 404; logs com stack completo |
+
+### Estrutura de Dados & Permissões
+
+- **User** → pode organizar eventos (role ORGANIZER) ou comprar ingressos (role CLIENT)
+- **Event** → propriedade do ORGANIZER; capacidade garantida por transações
+- **Order** → propriedade do usuário; acesso restrito ao dono
+- **Ticket** → acesso via link de compartilhamento (público) ou código (DOORMAN/ORGANIZER dono do evento)
+
+---
 
 ## 📁 Estrutura do Projeto
 
 ```
-ElitePass/                 # Raiz = Frontend Next.js
+ElitePass/                          # Raiz = Frontend Next.js
 ├── src/
-│   └── app/               # App Router do Next.js
-├── public/                # Arquivos estáticos
-├── package.json           # Dependências do frontend
-├── next.config.ts
-├── tsconfig.json
+│   ├── app/                        # App Router do Next.js
+│   ├── components/                 # Componentes React reutilizáveis
+│   └── lib/                        # Utilitários do frontend
+├── public/                         # Arquivos estáticos
+├── package.json                    # Dependências do frontend
+├── .env.local                      # Configuração local do frontend
+├── .env.example                    # Template de env vars frontend
 │
-└── backend/               # API Node.js (deploy separado — Railway, Render etc.)
+└── backend/                        # API Node.js (deploy separado)
     ├── src/
-    │   └── server.ts      # Ponto de entrada da API
-    └── prisma/
-        └── schema.prisma  # Modelos do banco de dados
+    │   ├── config/
+    │   │   └── env.ts              # Validação de env vars com Zod (startup)
+    │   ├── controllers/            # Handlers de rotas (auth, orders, events, etc.)
+    │   ├── middlewares/            # Rate limiters, error handler, auth
+    │   ├── routes/                 # Definição de rotas REST
+    │   ├── lib/                    # Utilitários (JWT, QR Code, tiers)
+    │   ├── generated/              # Tipos gerados do Prisma (gitignored)
+    │   ├── prisma.ts               # Singleton PrismaClient com adapter-pg
+    │   └── server.ts               # Ponto de entrada da API
+    │
+    ├── prisma/
+    │   ├── schema.prisma           # Modelos do banco (User, Event, Order, Ticket)
+    │   └── migrations/             # Histórico de migrations
+    │
+    ├── .env                        # Configuração local (segredos, DB)
+    ├── .env.example                # Template de env vars backend
+    ├── package.json                # Dependências backend (Express, Prisma, etc.)
+    ├── tsconfig.json               # Configuração TypeScript
+    └── ROADMAP.md                  # Especificação técnica completa do backend
 ```
 
 ---
@@ -196,8 +211,8 @@ ElitePass/                 # Raiz = Frontend Next.js
 ## 🚀 Como rodar o projeto
 
 ### Pré-requisitos
-- Node.js 18+
-- PostgreSQL instalado e rodando
+- Node.js 20.19.0+
+- PostgreSQL 12+
 - npm
 
 ### Frontend (raiz do projeto)
@@ -213,15 +228,30 @@ npm run dev
 ```bash
 cd backend
 
-# Configure a variável de ambiente
+# 1. Configure as variáveis de ambiente
 cp .env.example .env
-# Edite o .env com sua DATABASE_URL do PostgreSQL
+# Edite o .env com:
+#   - DATABASE_URL: conexão ao PostgreSQL
+#   - JWT_ACCESS_SECRET e JWT_REFRESH_SECRET: chaves secretas (gere com: openssl rand -hex 32)
+#   - TICKET_HMAC_SECRET: chave para assinatura de QR Codes
+#   - FRONTEND_URL: URL do frontend para CORS
+#   - (opcional) TICKETMASTER_API_KEY, TMDB_READ_ACCESS_TOKEN
 
+# 2. Instale dependências
 npm install
-npm run db:migrate    # Aplica as migrations no banco
-npm run dev           # Inicia o servidor em modo desenvolvimento
+
+# 3. Aplique as migrations no banco
+npm run db:migrate
+
+# 4. Inicie o servidor (modo desenvolvimento com reload automático)
+npm run dev
 # Acesse: http://localhost:3001
+
+# 5. (opcional) Abra o Prisma Studio para visualizar dados
+npm run db:studio
 ```
+
+**Nota:** O backend valida automaticamente todas as env vars obrigatórias no startup (Zod schema). Se alguma estiver faltando, o servidor exibe mensagem clara e encerra, evitando falhas silenciosas em produção.
 
 ### Deploy
 
@@ -240,5 +270,5 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](./LICENSE) para 
 ---
 
 <p align="center">
-  Feito com 🎟️ e ☕ por <strong>so-tha</strong> — Identidade visual criada com o auxílio da <strong>IA Gemini</strong>
+  Feito por <strong>so-tha</strong> — Identidade visual criada com o auxílio da <strong>IA Gemini</strong>
 </p>

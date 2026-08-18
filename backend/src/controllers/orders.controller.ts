@@ -2,7 +2,9 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma";
 import { generateTicketCode, generateQrData } from "../lib/ticketCode";
+import { tiersArraySchema } from "../lib/eventTiers";
 import { AuthenticatedRequest } from "../middlewares/requireAuth";
+import type { Prisma } from "../generated/client/client";
 
 // ─── Schema ───────────────────────────────────────────────────
 
@@ -30,41 +32,91 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const {
-    eventId, eventType, eventName, eventDate, eventVenue,
-    tierId, tierLabel, priceUnit, quantity,
-  } = parse.data;
+  const { eventId, eventType, eventName, eventDate, eventVenue, tierId, quantity } = parse.data;
 
-  const fee         = Math.round(priceUnit * quantity * 0.12 * 100) / 100;
-  const totalAmount = Math.round(priceUnit * quantity * 100) / 100 + fee;
+  // tierLabel/priceUnit do corpo só são confiáveis para eventos externos
+  // (Ticketmaster/TMDB), cuja API de catálogo não expõe preço por tier. Para
+  // eventos locais, ambos são sempre sobrescritos pelo tier salvo no banco
+  // logo abaixo — o cliente nunca decide o próprio preço de compra.
+  let { tierLabel, priceUnit } = parse.data;
 
-  // Transação: cria Order + Tickets atomicamente
-  const order = await prisma.$transaction(async (tx) => {
-    const newOrder = await tx.order.create({
-      data: {
-        userId,
-        eventId, eventType, eventName, eventDate, eventVenue,
-        tierId, tierLabel, priceUnit, quantity, fee, totalAmount,
-        status: "CONFIRMED",
-      },
+  // Transação: valida preço/capacidade e cria Order + Tickets atomicamente
+  try {
+    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+
+      // Se o evento existir no banco de dados local, valida tier, preço e capacidade
+      const localEvent = await tx.event.findUnique({ where: { id: eventId } });
+      if (localEvent) {
+        if (localEvent.status !== "PUBLISHED") {
+          throw new Error("EVENT_NOT_AVAILABLE");
+        }
+
+        const tiers = tiersArraySchema.parse(localEvent.tiers);
+        const tier  = tiers.find((t) => t.id === tierId);
+        if (!tier) {
+          throw new Error("TIER_NOT_FOUND");
+        }
+
+        tierLabel = tier.label;
+        priceUnit = tier.priceUnit;
+
+        if (localEvent.soldCount + quantity > localEvent.capacity) {
+          throw new Error("CAPACITY_EXCEEDED");
+        }
+
+        // Incrementa soldCount do evento atomicamente
+        await tx.event.update({
+          where: { id: eventId },
+          data:  { soldCount: { increment: quantity } },
+        });
+      }
+
+      const fee         = Math.round(priceUnit * quantity * 0.12 * 100) / 100;
+      const totalAmount = Math.round(priceUnit * quantity * 100) / 100 + fee;
+
+      const newOrder = await tx.order.create({
+        data: {
+          userId,
+          eventId, eventType, eventName, eventDate, eventVenue,
+          tierId, tierLabel, priceUnit, quantity, fee, totalAmount,
+          status: "CONFIRMED",
+        },
+      });
+
+      const ticketData = Array.from({ length: quantity }, () => {
+        const code   = generateTicketCode(eventName, tierLabel);
+        const qrData = generateQrData(code);
+        return { orderId: newOrder.id, code, qrData };
+      });
+
+      await tx.ticket.createMany({ data: ticketData });
+
+      return tx.order.findUnique({
+        where: { id: newOrder.id },
+        include: { tickets: true },
+      });
     });
 
-    const ticketData = Array.from({ length: quantity }, () => {
-      const code   = generateTicketCode(eventName, tierLabel);
-      const qrData = generateQrData(code);
-      return { orderId: newOrder.id, code, qrData };
-    });
-
-    await tx.ticket.createMany({ data: ticketData });
-
-    return tx.order.findUnique({
-      where: { id: newOrder.id },
-      include: { tickets: true },
-    });
-  });
-
-  res.status(201).json({ order });
+    res.status(201).json({ order });
+  } catch (err) {
+    if (err instanceof Error) {
+      if (err.message === "EVENT_NOT_AVAILABLE") {
+        res.status(400).json({ error: "Este evento não está disponível para vendas." });
+        return;
+      }
+      if (err.message === "TIER_NOT_FOUND") {
+        res.status(400).json({ error: "Setor/tier inválido para este evento." });
+        return;
+      }
+      if (err.message === "CAPACITY_EXCEEDED") {
+        res.status(409).json({ error: "Ingressos esgotados para a quantidade solicitada." });
+        return;
+      }
+    }
+    throw err;
+  }
 }
+
 
 /** GET /orders/mine — Lista pedidos do usuário logado */
 export async function getMyOrders(req: Request, res: Response): Promise<void> {
@@ -82,12 +134,13 @@ export async function getMyOrders(req: Request, res: Response): Promise<void> {
 /** GET /orders/:id — Detalhe de um pedido */
 export async function getOrderById(req: Request, res: Response): Promise<void> {
   const { userId } = (req as AuthenticatedRequest).user;
-  const { id }     = req.params;
+  const id         = req.params.id as string;
 
   const order = await prisma.order.findUnique({
     where:   { id },
     include: { tickets: true },
   });
+
 
   if (!order) {
     res.status(404).json({ error: "Pedido não encontrado." });
