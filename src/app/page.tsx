@@ -108,11 +108,14 @@ export default function Home() {
     return result.slice(0, 10);
   }, [events, movies]);
 
-  const fetchMovies = useCallback(async () => {
+  const fetchMovies = useCallback(async (keyword = "") => {
     setMoviesLoading(true);
     setMoviesError(null);
     try {
-      const res = await fetch("/api/movies");
+      const params = new URLSearchParams();
+      if (keyword) params.set("keyword", keyword);
+
+      const res = await fetch(`/api/movies?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro ao carregar filmes.");
       setMovies(data.movies ?? []);
@@ -151,11 +154,15 @@ export default function Home() {
   useEffect(() => {
     if (!search) {
       fetchEvents();
+      fetchMovies();
       return;
     }
-    const timer = setTimeout(() => fetchEvents(search), 500);
+    const timer = setTimeout(() => {
+      fetchEvents(search);
+      fetchMovies(search);
+    }, 500);
     return () => clearTimeout(timer);
-  }, [search, fetchEvents]);
+  }, [search, fetchEvents, fetchMovies]);
 
   useEffect(() => {
     const updateAll = () => {
@@ -171,6 +178,96 @@ export default function Home() {
       window.removeEventListener("resize", updateAll);
     };
   }, [events, movies, checkScroll]);
+
+  type SearchResultItem =
+    | { type: "event"; data: TMEvent }
+    | { type: "movie"; data: TMDBMovie };
+
+  const searchResults = useMemo<SearchResultItem[]>(() => {
+    const eventItems: SearchResultItem[] = events.map((e) => ({ type: "event", data: e }));
+    const movieItems: SearchResultItem[] = movies.map((m) => ({ type: "movie", data: m }));
+    return [...eventItems, ...movieItems];
+  }, [events, movies]);
+
+  const renderEventCard = (event: TMEvent) => (
+    <div
+      key={event.id}
+      className={styles.showCard}
+      id={`card-show-${event.id}`}
+      onClick={() => router.push(`/events/${event.id}`)}
+    >
+      <div className={styles.cardImage}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={getBestImage(event.images)}
+          alt={event.name}
+          className={styles.cardImg}
+          loading="lazy"
+        />
+        <span className={styles.cardBadge}>{getCategory(event)}</span>
+      </div>
+      <div className={styles.cardBody}>
+        <p className={styles.cardArtist}>{getArtistName(event)}</p>
+        <p className={styles.cardTitle}>{event.name}</p>
+        <p className={styles.cardDate}><CalendarIcon size={12} />{formatDate(event.dates.start.localDate)}</p>
+        <p className={styles.cardVenue}><MapPinIcon size={12} />{getVenue(event)}</p>
+        <div className={styles.cardFooter}>
+          <span className={styles.cardPrice}>{formatPrice(event)}</span>
+          <button
+            className={styles.btnCard}
+            id={`btn-confira-${event.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/events/${event.id}`);
+            }}
+          >
+            Comprar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMovieCard = (movie: TMDBMovie) => (
+    <div
+      key={movie.id}
+      className={styles.showCard}
+      id={`card-movie-${movie.id}`}
+      onClick={() => router.push(`/movies/${movie.id}`)}
+    >
+      <div className={styles.cardImage}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={tmdbPoster(movie.poster_path)}
+          alt={movie.title}
+          className={styles.cardImg}
+          loading="lazy"
+        />
+        <span className={styles.cardBadge}>
+          {movie.genre_ids?.[0] ? GENRE_MAP[movie.genre_ids[0]] ?? "Filme" : "Filme"}
+        </span>
+      </div>
+      <div className={styles.cardBody}>
+        <p className={styles.cardArtist}><StarIcon size={11} />{movie.vote_average.toFixed(1)}</p>
+        <p className={styles.cardTitle}>{movie.title}</p>
+        <p className={styles.cardDate}><CalendarIcon size={12} />{formatMovieDate(movie.release_date)}</p>
+        <p className={styles.cardVenue}><FilmIcon size={12} />No cinema</p>
+        <div className={styles.cardFooter}>
+          <span className={styles.cardPrice}>{formatMoviePrice(movie)}</span>
+          <button
+            className={styles.btnCard}
+            id={`btn-comprar-movie-${movie.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/movies/${movie.id}`);
+            }}
+          >
+            Comprar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className={styles.root}>
@@ -212,6 +309,55 @@ export default function Home() {
           </div>
         )}
 
+        {search ? (
+          <section id="resultados-busca" className={styles.showsSection}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Resultado da pesquisa</h2>
+              {(loading || moviesLoading) && <span className={styles.loadingDot}>Buscando...</span>}
+            </div>
+
+            {!loading && !moviesLoading && searchResults.length === 0 ? (
+              <p className={styles.noResults}>Nenhum resultado encontrado para &quot;{search}&quot;.</p>
+            ) : (
+              <div className={styles.carouselWrapper}>
+                {showsScroll.canLeft && (
+                  <button
+                    className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
+                    onClick={() => scroll(trackRef, "left", setShowsScroll)}
+                    aria-label="Anterior"
+                  >
+                    <ChevronLeftIcon size={22} />
+                  </button>
+                )}
+
+                <div
+                  className={styles.showsTrack}
+                  ref={trackRef}
+                  onScroll={() => checkScroll(trackRef, setShowsScroll)}
+                >
+                  {loading || moviesLoading
+                    ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                    : searchResults.map((item) =>
+                        item.type === "event"
+                          ? renderEventCard(item.data as TMEvent)
+                          : renderMovieCard(item.data as TMDBMovie)
+                      )}
+                </div>
+
+                {showsScroll.canRight && (
+                  <button
+                    className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
+                    onClick={() => scroll(trackRef, "right", setShowsScroll)}
+                    aria-label="Próximo"
+                  >
+                    <ChevronRightIcon size={22} />
+                  </button>
+                )}
+              </div>
+            )}
+          </section>
+        ) : (
+          <>
         <section className={styles.cardSliderSection}>
           <div className={styles.sliderHeader}>
             <h2 className={styles.sliderTitle}>Destaques em Cartaz</h2>
@@ -314,9 +460,7 @@ export default function Home() {
         {!error && (
           <section id="shows" className={styles.showsSection}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>
-                {search ? `Resultados para "${search}"` : "Shows e Eventos"}
-              </h2>
+              <h2 className={styles.sectionTitle}>Shows e Eventos</h2>
               {loading && <span className={styles.loadingDot}>Buscando...</span>}
             </div>
 
@@ -341,44 +485,7 @@ export default function Home() {
                 >
                   {loading
                     ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-                    : events.map((event) => (
-                        <div
-                          key={event.id}
-                          className={styles.showCard}
-                          id={`card-show-${event.id}`}
-                          onClick={() => router.push(`/events/${event.id}`)}
-                        >
-                          <div className={styles.cardImage}>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={getBestImage(event.images)}
-                              alt={event.name}
-                              className={styles.cardImg}
-                              loading="lazy"
-                            />
-                            <span className={styles.cardBadge}>{getCategory(event)}</span>
-                          </div>
-                          <div className={styles.cardBody}>
-                            <p className={styles.cardArtist}>{getArtistName(event)}</p>
-                            <p className={styles.cardTitle}>{event.name}</p>
-                            <p className={styles.cardDate}><CalendarIcon size={12} />{formatDate(event.dates.start.localDate)}</p>
-                            <p className={styles.cardVenue}><MapPinIcon size={12} />{getVenue(event)}</p>
-                            <div className={styles.cardFooter}>
-                              <span className={styles.cardPrice}>{formatPrice(event)}</span>
-                              <button
-                                className={styles.btnCard}
-                                id={`btn-confira-${event.id}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  router.push(`/events/${event.id}`);
-                                }}
-                              >
-                                Comprar
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    : events.map((event) => renderEventCard(event))}
                 </div>
 
                 {showsScroll.canRight && (
@@ -424,46 +531,7 @@ export default function Home() {
               >
                 {moviesLoading
                   ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-                  : movies.map((movie) => (
-                      <div
-                        key={movie.id}
-                        className={styles.showCard}
-                        id={`card-movie-${movie.id}`}
-                        onClick={() => router.push(`/movies/${movie.id}`)}
-                      >
-                        <div className={styles.cardImage}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={tmdbPoster(movie.poster_path)}
-                            alt={movie.title}
-                            className={styles.cardImg}
-                            loading="lazy"
-                          />
-                          <span className={styles.cardBadge}>
-                            {movie.genre_ids?.[0] ? GENRE_MAP[movie.genre_ids[0]] ?? "Filme" : "Filme"}
-                          </span>
-                        </div>
-                        <div className={styles.cardBody}>
-                          <p className={styles.cardArtist}><StarIcon size={11} />{movie.vote_average.toFixed(1)}</p>
-                          <p className={styles.cardTitle}>{movie.title}</p>
-                          <p className={styles.cardDate}><CalendarIcon size={12} />{formatMovieDate(movie.release_date)}</p>
-                          <p className={styles.cardVenue}><FilmIcon size={12} />No cinema</p>
-                          <div className={styles.cardFooter}>
-                            <span className={styles.cardPrice}>{formatMoviePrice(movie)}</span>
-                            <button
-                              className={styles.btnCard}
-                              id={`btn-comprar-movie-${movie.id}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/movies/${movie.id}`);
-                              }}
-                            >
-                              Comprar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  : movies.map((movie) => renderMovieCard(movie))}
               </div>
 
               {moviesScroll.canRight && (
@@ -478,6 +546,8 @@ export default function Home() {
             </div>
           )}
         </section>
+          </>
+        )}
       </main>
     </div>
   );
