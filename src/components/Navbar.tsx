@@ -76,9 +76,9 @@ export function Navbar() {
 
           {user ? (
             <>
-              <a href="#minha-conta" className={styles.mobileLink} onClick={close}>
+              <Link href="/account" className={styles.mobileLink} onClick={close}>
                 <UserIcon size={15} /> Minha conta
-              </a>
+              </Link>
               <a href="#favoritos" className={styles.mobileLink} onClick={close}>
                 <HeartIcon size={15} /> Favoritos
               </a>

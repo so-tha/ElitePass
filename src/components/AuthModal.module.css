@@ -2,14 +2,14 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  animation: fadeIn 0.25s ease-out forwards;
+  animation: fadeIn 0.2s ease-out forwards;
 }
 
 @keyframes fadeIn {
@@ -19,23 +19,23 @@
 
 .modal {
   width: 100%;
-  max-width: 440px;
-  background: #0d0d0d;
-  border: 1.5px solid var(--color-primary);
-  border-radius: 24px;
-  padding: 36px 32px 32px;
+  max-width: 420px;
+  background: #121215;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 32px 28px 28px;
   position: relative;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px var(--color-primary-glow);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  gap: 20px;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.96);
+    transform: translateY(14px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -45,33 +45,31 @@
 
 .closeBtn {
   position: absolute;
-  top: 18px;
-  right: 18px;
-  width: 32px;
-  height: 32px;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: all 0.2s ease;
 }
 
 .closeBtn:hover {
-  background: var(--color-primary);
-  color: #000000;
-  border-color: var(--color-primary);
-  transform: rotate(90deg);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fafafa;
 }
 
 .header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   text-align: center;
 }
 
@@ -82,24 +80,23 @@
 }
 
 .logoBadge {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   background: var(--color-primary);
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #000000;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 22px;
-  box-shadow: 0 0 15px var(--color-primary-glow);
+  font-size: 18px;
 }
 
 .logoText {
   font-family: var(--font-display);
-  font-size: 28px;
-  letter-spacing: 1.5px;
+  font-size: 24px;
+  letter-spacing: 1px;
   color: var(--color-primary);
   line-height: 1;
   text-transform: uppercase;
@@ -107,40 +104,39 @@
 
 .subtitle {
   font-size: 13px;
-  color: var(--color-text-muted);
+  color: #71717a;
 }
 
 .tabRow {
   display: flex;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  padding: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 3px;
 }
 
 .tabBtn {
   flex: 1;
-  padding: 10px 0;
-  border-radius: 999px;
+  padding: 8px 0;
+  border-radius: 8px;
   background: transparent;
   border: none;
-  color: var(--color-text-muted);
+  color: #a1a1aa;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .tabActive {
-  background: var(--color-primary);
-  color: #000000;
-  box-shadow: 0 2px 10px var(--color-primary-glow);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fafafa;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .field {
@@ -151,10 +147,9 @@
 
 .label {
   font-size: 12px;
-  font-weight: 700;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: #a1a1aa;
+  letter-spacing: 0.2px;
 }
 
 .inputWrapper {
@@ -166,26 +161,26 @@
 .inputIcon {
   position: absolute;
   left: 14px;
-  color: var(--color-text-dim);
+  color: #71717a;
   pointer-events: none;
 }
 
 .input {
   width: 100%;
-  padding: 12px 14px 12px 40px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  color: var(--color-text);
+  padding: 11px 14px 11px 40px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  color: #fafafa;
   font-size: 14px;
   font-family: var(--font-base);
   outline: none;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-glow);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .togglePassBtn {
@@ -193,30 +188,25 @@
   right: 12px;
   background: none;
   border: none;
-  color: var(--color-text-muted);
+  color: #71717a;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 4px;
-  transition: color var(--transition);
+  transition: color 0.2s ease;
 }
 
 .togglePassBtn:hover {
-  color: var(--color-text);
+  color: #fafafa;
 }
 
 .forgotLink {
   align-self: flex-end;
   font-size: 12px;
   color: var(--color-primary);
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
-  transition: opacity var(--transition);
-}
-
-.forgotLink:hover {
-  opacity: 0.8;
 }
 
 .errorBanner {
@@ -225,8 +215,8 @@
   gap: 8px;
   padding: 10px 14px;
   border-radius: 8px;
-  background: rgba(220, 38, 38, 0.15);
-  border: 1px solid rgba(220, 38, 38, 0.4);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
   color: #f87171;
   font-size: 13px;
 }
@@ -237,56 +227,51 @@
   gap: 8px;
   padding: 10px 14px;
   border-radius: 8px;
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
   color: #4ade80;
   font-size: 13px;
 }
 
 .btnSubmit {
   margin-top: 4px;
-  padding: 14px 0;
-  border-radius: 999px;
+  padding: 12px 0;
+  border-radius: 10px;
   background: var(--color-primary);
   color: #000000;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   border: none;
   cursor: pointer;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 20px var(--color-primary-glow);
-  transition: filter var(--transition), transform var(--transition);
+  transition: opacity 0.2s ease;
 }
 
 .btnSubmit:hover {
-  filter: brightness(1.12);
-  transform: translateY(-2px);
+  opacity: 0.92;
 }
 
 .btnSubmit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
 }
 
 .divider {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 4px 0;
+  margin: 2px 0;
 }
 
 .dividerLine {
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .dividerText {
   font-size: 11px;
-  color: var(--color-text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #71717a;
+  letter-spacing: 0.3px;
 }
 
 .btnGoogle {
@@ -294,18 +279,18 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 12px 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--color-text);
+  padding: 10px 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #fafafa;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: all 0.2s ease;
 }
 
 .btnGoogle:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
 }

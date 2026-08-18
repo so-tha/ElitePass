@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import styles from "./UserMenu.module.css";
 import { UserIcon, HeartIcon, TicketIcon, GridIcon, LogOutIcon, ChevronDownIcon } from "./icons";
 import { useAuth } from "@/lib/auth-context";
@@ -63,9 +64,9 @@ export function UserMenu() {
 
           <ul className={styles.menuList}>
             <li>
-              <a href="#minha-conta" className={styles.menuItem} role="menuitem" onClick={() => setOpen(false)}>
+              <Link href="/account" className={styles.menuItem} role="menuitem" onClick={() => setOpen(false)}>
                 <UserIcon size={15} /> Minha conta
-              </a>
+              </Link>
             </li>
             <li>
               <a href="#favoritos" className={styles.menuItem} role="menuitem" onClick={() => setOpen(false)}>
