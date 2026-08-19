@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
+import EventCard from "@/components/EventCard";
 import {
   SearchIcon,
   XIcon,
@@ -94,17 +95,17 @@ function getCategoryBadge(categoryStr: string) {
   const key = getCategoryGroupKey(categoryStr);
   switch (key) {
     case "COMEDIA":
-      return { key, label: "COMÉDIA", bg: "rgba(255, 178, 44, 0.18)", color: "#FFB22C", border: "1px solid #FFB22C" };
+      return { key, label: "COMÉDIA", bg: "#FFB22C", color: "#000000", border: "none" };
     case "TEATRO":
-      return { key, label: "TEATRO", bg: "rgba(239, 68, 68, 0.18)", color: "#EF4444", border: "1px solid #EF4444" };
+      return { key, label: "TEATRO", bg: "#EF4444", color: "#ffffff", border: "none" };
     case "PALESTRA":
-      return { key, label: "PALESTRA", bg: "rgba(16, 185, 129, 0.18)", color: "#10B981", border: "1px solid #10B981" };
+      return { key, label: "PALESTRA", bg: "#10B981", color: "#000000", border: "none" };
     case "SHOWS":
-      return { key, label: "MPB/POP", bg: "rgba(59, 130, 246, 0.18)", color: "#3B82F6", border: "1px solid #3B82F6" };
+      return { key, label: "MPB/POP", bg: "#3B82F6", color: "#ffffff", border: "none" };
     case "CINEMA":
-      return { key, label: "CINEMA", bg: "rgba(139, 92, 246, 0.18)", color: "#A855F7", border: "1px solid #A855F7" };
+      return { key, label: "CINEMA", bg: "#A855F7", color: "#ffffff", border: "none" };
     default:
-      return { key, label: categoryStr.toUpperCase().substring(0, 10), bg: "rgba(255, 178, 44, 0.18)", color: "#FFB22C", border: "1px solid #FFB22C" };
+      return { key, label: categoryStr.toUpperCase().substring(0, 10), bg: "#FFB22C", color: "#000000", border: "none" };
   }
 }
 
@@ -361,67 +362,19 @@ export default function Home() {
   const renderEventCard = (event: TMEvent) => {
     const catInfo = getCategoryBadge(getCategory(event));
     return (
-      <div
+      <EventCard
         key={event.id}
-        className={styles.showCard}
-        id={`card-show-${event.id}`}
-        onClick={() => router.push(`/events/${event.id}`)}
-      >
-        <div className={styles.cardImage}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={getBestImage(event.images)}
-            alt={event.name}
-            className={styles.cardImg}
-            loading="lazy"
-          />
-          <span className={styles.cardPosterBadge}>{getCategory(event)}</span>
-        </div>
-
-        <div className={styles.cardBody}>
-          <div>
-            <div className={styles.cardHeaderRow}>
-              <span className={styles.cardTitle} title={event.name}>{event.name}</span>
-              <span
-                className={styles.cardCategoryBadge}
-                style={{ background: catInfo.bg, color: catInfo.color, border: catInfo.border }}
-              >
-                {catInfo.label}
-              </span>
-            </div>
-
-            <div className={styles.cardMetaGroup}>
-              <span className={styles.cardDateText}>
-                <CalendarIcon size={11} />
-                {formatDate(event.dates.start.localDate)}
-              </span>
-              <span className={styles.cardVenueText}>
-                <MapPinIcon size={11} />
-                <span>{getVenue(event)}</span>
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <div className={styles.cardFooterRow}>
-              <div className={styles.priceBlock}>
-                <span className={styles.priceLabel}>A partir de</span>
-                <span className={styles.priceAmount}>{formatPrice(event)}</span>
-              </div>
-              <button
-                className={styles.btnComprarCard}
-                id={`btn-confira-${event.id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  router.push(`/events/${event.id}`);
-                }}
-              >
-                Comprar Ingressos
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+        id={event.id}
+        title={event.name}
+        image={getBestImage(event.images)}
+        category={getCategory(event)}
+        categoryBadge={catInfo}
+        date={formatDate(event.dates.start.localDate)}
+        time={event.dates.start.localTime?.slice(0, 5)}
+        venue={getVenue(event)}
+        price={formatPrice(event)}
+        rating={4.8}
+      />
     );
   };
 
@@ -429,69 +382,19 @@ export default function Home() {
     const genreName = movie.genre_ids?.[0] ? GENRE_MAP[movie.genre_ids[0]] ?? "Cinema" : "Cinema";
     const catInfo = getCategoryBadge(genreName);
     return (
-      <div
+      <EventCard
         key={movie.id}
-        className={styles.showCard}
-        id={`card-movie-${movie.id}`}
-        onClick={() => router.push(`/movies/${movie.id}`)}
-      >
-        <div className={styles.cardImage}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={tmdbPoster(movie.poster_path)}
-            alt={movie.title}
-            className={styles.cardImg}
-            loading="lazy"
-          />
-          <span className={styles.cardPosterBadge}>IMAX 3D</span>
-        </div>
-
-        <div className={styles.cardBody}>
-          <div>
-            <div className={styles.cardHeaderRow}>
-              <span className={styles.cardTitle} title={movie.title}>{movie.title}</span>
-              <span
-                className={styles.cardCategoryBadge}
-                style={{ background: catInfo.bg, color: catInfo.color, border: catInfo.border }}
-              >
-                {catInfo.label}
-              </span>
-            </div>
-
-            <div className={styles.cardMetaGroup}>
-              <span className={styles.cardDateText}>
-                <CalendarIcon size={11} />
-                {formatMovieDate(movie.release_date)}
-              </span>
-              <span className={styles.cardVenueText}>
-                <FilmIcon size={11} />
-                <span>Cinemark & UCI IMAX</span>
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <p className={styles.ticketsAvailableTag}>Ingressos disponíveis: ~150</p>
-
-            <div className={styles.cardFooterRow}>
-              <div className={styles.priceBlock}>
-                <span className={styles.priceLabel}>A partir de</span>
-                <span className={styles.priceAmount}>{formatMoviePrice(movie)}</span>
-              </div>
-              <button
-                className={styles.btnComprarCard}
-                id={`btn-comprar-movie-${movie.id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  router.push(`/movies/${movie.id}`);
-                }}
-              >
-                Comprar Ingressos
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+        id={String(movie.id)}
+        title={movie.title}
+        image={tmdbPoster(movie.poster_path)}
+        category="CINEMA"
+        categoryBadge={catInfo}
+        date={formatMovieDate(movie.release_date)}
+        venue="Cinemark & UCI IMAX"
+        price={formatMoviePrice(movie)}
+        ticketsRemaining={150}
+        rating={movie.vote_average ? Number((movie.vote_average / 2).toFixed(1)) : 4.5}
+      />
     );
   };
 
