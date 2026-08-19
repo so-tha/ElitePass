@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
@@ -9,12 +9,8 @@ import {
   XIcon,
   MapPinIcon,
   CalendarIcon,
-  TicketIcon,
-  StarIcon,
   FilmIcon,
   AlertTriangleIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   ChevronDownIcon,
 } from "@/components/icons";
 import {
@@ -22,7 +18,6 @@ import {
   getBestImage,
   formatPrice,
   formatDate,
-  getArtistName,
   getVenue,
   getCategory,
   getEventMinPrice,
@@ -53,32 +48,24 @@ function CardSkeleton() {
 }
 
 const TYPE_OPTIONS = [
-  { label: "Todos os Tipos", desc: "Show, Teatro, Comédia, Timcorna, etc." },
-  { label: "Shows & Festivais", desc: "Música ao vivo, festivais, pop, sertanejo" },
-  { label: "Teatro & Dança", desc: "Peças, comédias dramáticas, balé" },
-  { label: "Comédia & Stand-up", desc: "Humor, stand-up, improviso" },
-  { label: "Cinema & Mostras", desc: "Salas IMAX, 3D, lançamentos" },
+  { label: "Todos", desc: "Todos os tipos de eventos" },
+  { label: "Shows & Festivais", desc: "Música ao vivo e festivais" },
+  { label: "Teatro & Dança", desc: "Apresentações teatrais e de dança" },
+  { label: "Comédia & Stand-up", desc: "Comediantes e shows de humor" },
+  { label: "Cinema & Mostras", desc: "Filmes e mostras de cinema" },
 ];
 
 const DATE_OPTIONS = [
-  { label: "Todas as Datas", desc: "Hoje, Este Fim de Semana, Próximos 30 Dias, Etc." },
-  { label: "Hoje", desc: "Eventos hoje" },
-  { label: "Este Fim de Semana", desc: "Sábado e Domingo" },
-  { label: "Próximos 30 Dias", desc: "Próximas 4 semanas" },
-];
-
-const LOCATION_OPTIONS = [
-  { label: "Todos os Locais", desc: "São Paulo, Rio de Janeiro, etc." },
-  { label: "São Paulo — SP", desc: "Allianz Parque, Tokio Marine, Vibra" },
-  { label: "Rio de Janeiro — RJ", desc: "Jeunesse Arena, Circo Voador" },
-  { label: "Belo Horizonte — MG", desc: "Mineirão, Beira-Rio" },
+  { label: "Todas as Datas", desc: "Qualquer data" },
+  { label: "Hoje", desc: "Eventos de hoje" },
+  { label: "Este Fim de Semana", desc: "Sábado e domingo" },
+  { label: "Próximos 30 Dias", desc: "Próximo mês" },
 ];
 
 const SORT_OPTIONS = [
-  { label: "Mais Recente • Menor Preço", desc: "Novidades ou menor preço primeiro" },
-  { label: "Mais Recente", desc: "Recém-adicionados" },
-  { label: "Menor Preço", desc: "Preços mais em conta" },
-  { label: "Maior Preço", desc: "Setores VIP" },
+  { label: "Mais Recente", desc: "Eventos mais próximos" },
+  { label: "Menor Preço", desc: "Ingressos mais baratos" },
+  { label: "Maior Preço", desc: "Ingressos mais caros" },
 ];
 
 type CategoryGroupKey = "SHOWS" | "TEATRO" | "COMEDIA" | "PALESTRA" | "CINEMA" | "OTHER";
@@ -122,6 +109,7 @@ function getCategoryBadge(categoryStr: string) {
 }
 
 const TYPE_TO_GROUP: Partial<Record<string, CategoryGroupKey>> = {
+  "Todos": undefined,
   "Shows & Festivais": "SHOWS",
   "Teatro & Dança": "TEATRO",
   "Comédia & Stand-up": "COMEDIA",
@@ -132,13 +120,6 @@ function matchesTypeFilter(event: TMEvent, selectedType: string): boolean {
   const wanted = TYPE_TO_GROUP[selectedType];
   if (!wanted) return true;
   return getCategoryGroupKey(getCategory(event)) === wanted;
-}
-
-function matchesLocationFilter(event: TMEvent, selectedLocation: string): boolean {
-  if (selectedLocation === "Todos os Locais") return true;
-  const cityPart = selectedLocation.split("—")[0].trim();
-  const eventCity = event._embedded?.venues?.[0]?.city?.name ?? "";
-  return eventCity.toLowerCase().includes(cityPart.toLowerCase());
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -246,66 +227,15 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedType, setSelectedType] = useState("Todos os Tipos");
+  const [selectedType, setSelectedType] = useState("Todos");
   const [selectedDate, setSelectedDate] = useState("Todas as Datas");
-  const [selectedLocation, setSelectedLocation] = useState("Todos os Locais");
-  const [selectedSort, setSelectedSort] = useState("Mais Recente • Menor Preço");
+  const [selectedSort, setSelectedSort] = useState("Mais Recente");
 
-  const [openDropdown, setOpenDropdown] = useState<"type" | "date" | "location" | "sort" | null>(null);
-
-  const sliderRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const moviesRef = useRef<HTMLDivElement>(null);
+  const [openDropdown, setOpenDropdown] = useState<"type" | "date" | "sort" | null>(null);
 
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [moviesLoading, setMoviesLoading] = useState(true);
   const [moviesError, setMoviesError] = useState<string | null>(null);
-
-  const [sliderScroll, setSliderScroll] = useState({ canLeft: false, canRight: false });
-  const [showsScroll, setShowsScroll] = useState({ canLeft: false, canRight: false });
-  const [moviesScroll, setMoviesScroll] = useState({ canLeft: false, canRight: false });
-
-  const checkScroll = useCallback((
-    ref: React.RefObject<HTMLDivElement | null>,
-    setter: React.Dispatch<React.SetStateAction<{ canLeft: boolean; canRight: boolean }>>
-  ) => {
-    if (ref.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = ref.current;
-      const canLeft = scrollLeft > 10;
-      const canRight = scrollLeft + clientWidth < scrollWidth - 10;
-      setter({ canLeft, canRight });
-    }
-  }, []);
-
-  const scroll = (
-    ref: React.RefObject<HTMLDivElement | null>,
-    direction: "left" | "right",
-    setter: React.Dispatch<React.SetStateAction<{ canLeft: boolean; canRight: boolean }>>
-  ) => {
-    if (ref.current) {
-      ref.current.scrollBy({
-        left: direction === "left" ? -480 : 480,
-        behavior: "smooth",
-      });
-      setTimeout(() => checkScroll(ref, setter), 350);
-    }
-  };
-
-  type FeaturedItem =
-    | { type: "event"; data: TMEvent }
-    | { type: "movie"; data: TMDBMovie };
-
-  const featuredItems = useMemo<FeaturedItem[]>(() => {
-    const eventItems: FeaturedItem[] = events.slice(0, 6).map((e) => ({ type: "event", data: e }));
-    const movieItems: FeaturedItem[] = movies.slice(0, 6).map((m) => ({ type: "movie", data: m }));
-    const result: FeaturedItem[] = [];
-    const len = Math.max(eventItems.length, movieItems.length);
-    for (let i = 0; i < len; i++) {
-      if (eventItems[i]) result.push(eventItems[i]);
-      if (movieItems[i]) result.push(movieItems[i]);
-    }
-    return result.slice(0, 10);
-  }, [events, movies]);
 
   const fetchMovies = useCallback(async (keyword = "") => {
     setMoviesLoading(true);
@@ -368,32 +298,16 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [search, fetchEvents, fetchMovies]);
 
-  useEffect(() => {
-    const updateAll = () => {
-      checkScroll(sliderRef, setSliderScroll);
-      checkScroll(trackRef, setShowsScroll);
-      checkScroll(moviesRef, setMoviesScroll);
-    };
-    updateAll();
-    const timer = setTimeout(updateAll, 300);
-    window.addEventListener("resize", updateAll);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("resize", updateAll);
-    };
-  }, [events, movies, checkScroll]);
-
-  const showMoviesSection = selectedType === "Todos os Tipos" || selectedType === "Cinema & Mostras";
+  const showMoviesSection = selectedType === "Todos" || selectedType === "Cinema & Mostras";
 
   const filteredEvents = useMemo(() => {
     const filtered = events.filter(
       (event) =>
         matchesTypeFilter(event, selectedType) &&
-        matchesLocationFilter(event, selectedLocation) &&
         matchesDateFilter(parseLocalDate(event.dates.start.localDate), selectedDate)
     );
     return sortEventList(filtered, selectedSort);
-  }, [events, selectedType, selectedLocation, selectedDate, selectedSort]);
+  }, [events, selectedType, selectedDate, selectedSort]);
 
   const filteredMovies = useMemo(() => {
     if (!showMoviesSection) return [];
@@ -611,7 +525,7 @@ export default function Home() {
                 <div className={styles.filterBoxTextGroup}>
                   <span className={styles.filterBoxTitle}>{selectedType}</span>
                   <span className={styles.filterBoxDesc}>
-                    {TYPE_OPTIONS.find((t) => t.label === selectedType)?.desc ?? "Show, Teatro, Comédia, Timcorna, etc."}
+                    {TYPE_OPTIONS.find((t) => t.label === selectedType)?.desc ?? "Shows, Festivais, Teatro, Comédia, Cinema, Etc."}
                   </span>
                 </div>
                 <ChevronDownIcon size={16} className={styles.filterChevron} />
@@ -677,45 +591,7 @@ export default function Home() {
               )}
             </div>
 
-            {/* Filter 3: Locais */}
-            <div className={styles.filterBoxContainer}>
-              <button
-                type="button"
-                className={`${styles.filterBox} ${openDropdown === "location" ? styles.filterBoxActive : ""}`}
-                onClick={() => setOpenDropdown(openDropdown === "location" ? null : "location")}
-              >
-                <div className={styles.filterBoxTextGroup}>
-                  <span className={styles.filterBoxTitle}>{selectedLocation}</span>
-                  <span className={styles.filterBoxDesc}>
-                    {LOCATION_OPTIONS.find((l) => l.label === selectedLocation)?.desc ?? "São Paulo, Rio de Janeiro, etc."}
-                  </span>
-                </div>
-                <ChevronDownIcon size={16} className={styles.filterChevron} />
-              </button>
-
-              {openDropdown === "location" && (
-                <>
-                  <div className={styles.dropdownBackdrop} onClick={() => setOpenDropdown(null)} />
-                  <div className={styles.dropdownMenu}>
-                    {LOCATION_OPTIONS.map((opt) => (
-                      <div
-                        key={opt.label}
-                        className={`${styles.dropdownItem} ${selectedLocation === opt.label ? styles.dropdownItemActive : ""}`}
-                        onClick={() => {
-                          setSelectedLocation(opt.label);
-                          setOpenDropdown(null);
-                        }}
-                      >
-                        <span className={styles.dropdownItemLabel}>{opt.label}</span>
-                        <span className={styles.dropdownItemDesc}>{opt.desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Filter 4: Ordenação */}
+            {/* Filter 3: Ordenação */}
             <div className={styles.filterBoxContainer}>
               <button
                 type="button"
