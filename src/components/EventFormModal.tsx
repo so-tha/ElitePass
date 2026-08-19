@@ -175,8 +175,8 @@ export function EventFormModal({ isOpen, onClose, onSaved, event }: EventFormMod
   };
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
         <button className={styles.closeBtn} onClick={onClose} aria-label="Fechar">
           <XIcon size={14} />
         </button>
