@@ -10,7 +10,7 @@ export interface DashboardEventItem {
   capacity: number;
   soldCount: number;
   revenue: number;
-  status: "ATIVO" | "AGUARDANDO" | "CANCELADO";
+  status: "ATIVO" | "PAUSADO" | "AGUARDANDO" | "CANCELADO";
 }
 
 export interface ActivityItem {

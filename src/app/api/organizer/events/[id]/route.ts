@@ -45,6 +45,33 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader) {
+    return NextResponse.json({ error: "Token não fornecido." }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  try {
+    const body = await req.text();
+    const res = await fetch(`${backendUrl}/api/events/${id}/status`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", authorization: authHeader },
+      body,
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("[/api/organizer/events/[id]] PATCH", err);
+    return NextResponse.json(
+      { error: "Não foi possível conectar ao servidor. Tente novamente em instantes." },
+      { status: 502 }
+    );
+  }
+}
+
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) {

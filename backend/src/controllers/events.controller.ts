@@ -146,6 +146,45 @@ export async function updateEvent(req: Request, res: Response): Promise<void> {
   res.json({ event: updated });
 }
 
+const updateEventStatusSchema = z.object({
+  status: z.enum(["PUBLISHED", "PAUSED"]),
+});
+
+/** PATCH /events/:id/status — Pausa ou reativa um evento (ORGANIZER) */
+export async function updateEventStatus(req: Request, res: Response): Promise<void> {
+  const { userId } = (req as AuthenticatedRequest).user;
+  const id         = req.params.id as string;
+
+  const existing = await prisma.event.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: "Evento não encontrado." });
+    return;
+  }
+
+  if (existing.organizerId !== userId) {
+    res.status(403).json({ error: "Acesso não autorizado para este evento." });
+    return;
+  }
+
+  if (existing.status === "CANCELLED") {
+    res.status(400).json({ error: "Não é possível alterar o status de um evento cancelado." });
+    return;
+  }
+
+  const parse = updateEventStatusSchema.safeParse(req.body);
+  if (!parse.success) {
+    res.status(400).json({ error: parse.error.flatten().fieldErrors });
+    return;
+  }
+
+  const updated = await prisma.event.update({
+    where: { id },
+    data:  { status: parse.data.status },
+  });
+
+  res.json({ event: updated });
+}
+
 /** DELETE /events/:id — Cancela um evento (ORGANIZER) */
 export async function deleteEvent(req: Request, res: Response): Promise<void> {
   const { userId } = (req as AuthenticatedRequest).user;
@@ -224,8 +263,9 @@ export async function getEventStats(req: Request, res: Response): Promise<void> 
   });
 }
 
-const EVENT_STATUS_LABEL: Record<string, "ATIVO" | "AGUARDANDO" | "CANCELADO"> = {
+const EVENT_STATUS_LABEL: Record<string, "ATIVO" | "PAUSADO" | "AGUARDANDO" | "CANCELADO"> = {
   PUBLISHED: "ATIVO",
+  PAUSED: "PAUSADO",
   CANCELLED: "CANCELADO",
   DRAFT: "AGUARDANDO",
   COMPLETED: "ATIVO",

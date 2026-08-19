@@ -163,6 +163,8 @@ export default function DashboardPage() {
 
 
   const [editingEvent, setEditingEvent] = useState<DashboardEventItem | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<DashboardEventItem | null>(null);
+  const [pendingEventId, setPendingEventId] = useState<string | null>(null);
 
   const [previewEvent, setPreviewEvent] = useState<DashboardEventItem | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -265,18 +267,76 @@ export default function DashboardPage() {
     setUploadedImage(null);
   };
 
-  const handleToggleStatus = (evtId: string) => {
-    if (!data) return;
-    const updatedEvents = data.events.map((item) => {
-      if (item.id === evtId) {
-        return {
-          ...item,
-          status: (item.status === "ATIVO" ? "AGUARDANDO" : "ATIVO") as "ATIVO" | "AGUARDANDO" | "CANCELADO",
-        };
+  const getStatusClass = (status: DashboardEventItem["status"]) => {
+    if (status === "ATIVO") return styles.statusActive;
+    if (status === "CANCELADO") return styles.statusCancelled;
+    return styles.statusWaiting;
+  };
+
+  const handleToggleStatus = async (evtId: string) => {
+    if (!data || !accessToken) return;
+    const target = data.events.find((item) => item.id === evtId);
+    if (!target || target.status === "CANCELADO") return;
+
+    const nextStatus = target.status === "ATIVO" ? "PAUSED" : "PUBLISHED";
+
+    setPendingEventId(evtId);
+    try {
+      const res = await fetch(`/api/organizer/events/${evtId}`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      if (!res.ok) {
+        alert("Não foi possível atualizar o status do evento. Tente novamente.");
+        return;
       }
-      return item;
-    });
-    setData({ ...data, events: updatedEvents });
+
+      const updatedEvents = data.events.map((item) =>
+        item.id === evtId
+          ? { ...item, status: (nextStatus === "PUBLISHED" ? "ATIVO" : "PAUSADO") as DashboardEventItem["status"] }
+          : item
+      );
+      setData({ ...data, events: updatedEvents });
+    } catch (err) {
+      console.error("Erro ao atualizar status do evento:", err);
+      alert("Não foi possível conectar ao servidor. Tente novamente.");
+    } finally {
+      setPendingEventId(null);
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!data || !accessToken || !cancelTarget) return;
+    const evtId = cancelTarget.id;
+
+    setPendingEventId(evtId);
+    try {
+      const res = await fetch(`/api/organizer/events/${evtId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (!res.ok) {
+        alert("Não foi possível cancelar o evento. Tente novamente.");
+        return;
+      }
+
+      const updatedEvents = data.events.map((item) =>
+        item.id === evtId ? { ...item, status: "CANCELADO" as DashboardEventItem["status"] } : item
+      );
+      setData({ ...data, events: updatedEvents });
+    } catch (err) {
+      console.error("Erro ao cancelar evento:", err);
+      alert("Não foi possível conectar ao servidor. Tente novamente.");
+    } finally {
+      setPendingEventId(null);
+      setCancelTarget(null);
+    }
   };
 
   return (
@@ -365,17 +425,19 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            className={styles.btnNewEvent}
-            onClick={() => {
-              setUploadedImage(null);
-              setActiveTab("novo");
-            }}
-          >
-            <PlusIcon size={16} />
-            <span>Novo Evento</span>
-          </button>
+          {activeTab !== "novo" && (
+            <button
+              type="button"
+              className={styles.btnNewEvent}
+              onClick={() => {
+                setUploadedImage(null);
+                setActiveTab("novo");
+              }}
+            >
+              <PlusIcon size={16} />
+              <span>Novo Evento</span>
+            </button>
+          )}
         </header>
 
         {activeTab === "dashboard" && (
@@ -477,7 +539,7 @@ export default function DashboardPage() {
                       <span className={styles.ticketsCell}>{evt.soldCount} / {evt.capacity}</span>
                       <span className={styles.revenueCell}>{formatCurrency(evt.revenue)}</span>
                       <div>
-                        <span className={evt.status === "ATIVO" ? styles.statusActive : styles.statusWaiting}>
+                        <span className={getStatusClass(evt.status)}>
                           {evt.status}
                         </span>
                       </div>
@@ -498,14 +560,18 @@ export default function DashboardPage() {
                         >
                           <EyeIcon size={14} />
                         </button>
-                        <button
-                          type="button"
-                          className={styles.actionBtn}
-                          aria-label="Mais"
-                          onClick={() => handleToggleStatus(evt.id)}
-                        >
-                          <MoreHorizontalIcon size={14} />
-                        </button>
+                        {evt.status !== "CANCELADO" && (
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            aria-label={evt.status === "ATIVO" ? "Pausar evento" : "Ativar evento"}
+                            title={evt.status === "ATIVO" ? "Pausar evento" : "Ativar evento"}
+                            onClick={() => handleToggleStatus(evt.id)}
+                            disabled={pendingEventId === evt.id}
+                          >
+                            <MoreHorizontalIcon size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))
@@ -563,7 +629,7 @@ export default function DashboardPage() {
                       className={styles.cardImage}
                     />
                     <div className={styles.cardStatus}>
-                      <span className={evt.status === "ATIVO" ? styles.statusActive : styles.statusWaiting}>
+                      <span className={getStatusClass(evt.status)}>
                         {evt.status}
                       </span>
                     </div>
@@ -612,13 +678,30 @@ export default function DashboardPage() {
                     >
                       <EyeIcon size={14} /> Ver
                     </button>
-                    <button
-                      type="button"
-                      className={`${styles.btnCardAction} ${styles.btnCardActionPrimary}`}
-                      onClick={() => handleToggleStatus(evt.id)}
-                    >
-                      {evt.status === "ATIVO" ? "Pausar" : "Ativar"}
-                    </button>
+                    {evt.status === "CANCELADO" ? (
+                      <span className={styles.statusCancelled} style={{ marginLeft: "auto" }}>
+                        Evento Cancelado
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className={`${styles.btnCardAction} ${styles.btnCardActionPrimary}`}
+                          onClick={() => handleToggleStatus(evt.id)}
+                          disabled={pendingEventId === evt.id}
+                        >
+                          {evt.status === "ATIVO" ? "Pausar" : "Ativar"}
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.btnCardAction} ${styles.btnCardActionDanger}`}
+                          onClick={() => setCancelTarget(evt)}
+                          disabled={pendingEventId === evt.id}
+                        >
+                          Cancelar
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -802,7 +885,7 @@ export default function DashboardPage() {
                 }}
               />
               <div style={{ position: "absolute", bottom: "16px", left: "20px" }}>
-                <span className={styles.statusActive}>{previewEvent.status}</span>
+                <span className={getStatusClass(previewEvent.status)}>{previewEvent.status}</span>
               </div>
             </div>
 
@@ -1072,6 +1155,18 @@ export default function DashboardPage() {
         description="Deseja realmente encerrar a sessão do painel do organizador?"
         confirmText="Sair"
         cancelText="Cancelar"
+        variant="danger"
+      />
+
+      {/* IN-APP CONFIRMATION POPUP FOR EVENT CANCELLATION */}
+      <ConfirmModal
+        isOpen={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleConfirmCancel}
+        title="Cancelar Evento"
+        description={`Deseja realmente cancelar "${cancelTarget?.title}"? O evento continuará visível, mas ficará indisponível para compra de ingressos. Essa ação não pode ser desfeita.`}
+        confirmText="Cancelar Evento"
+        cancelText="Voltar"
         variant="danger"
       />
     </div>
