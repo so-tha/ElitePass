@@ -7,12 +7,14 @@ import { PlusIcon, TicketIcon, UserIcon, HeartIcon, GridIcon, LogOutIcon } from 
 import { AuthModal } from "./AuthModal";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "@/lib/auth-context";
+import { ConfirmModal } from "./ConfirmModal";
 
 export function Navbar() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const close = () => setOpen(false);
 
@@ -98,7 +100,7 @@ export function Navbar() {
                 style={{ background: "none", border: "none", width: "100%", textAlign: "left", cursor: "pointer" }}
                 onClick={() => {
                   close();
-                  logout();
+                  setShowLogoutModal(true);
                 }}
               >
                 <LogOutIcon size={15} /> Sair
@@ -121,6 +123,17 @@ export function Navbar() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         initialMode={authMode}
+      />
+
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={logout}
+        title="Encerrar sessão"
+        description="Deseja realmente sair da sua conta?"
+        confirmText="Sair da conta"
+        cancelText="Cancelar"
+        variant="danger"
       />
     </>
   );

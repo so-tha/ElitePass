@@ -19,7 +19,7 @@ import {
 } from "@/components/icons";
 import type { DashboardData, DashboardEventItem } from "@/app/api/organizer/dashboard/route";
 import { useAuth } from "@/lib/auth-context";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const CATEGORY_OPTIONS = [
   { value: "Shows e Festivais", label: "Shows e Festivais" },
@@ -148,12 +148,18 @@ function CustomCategorySelect({
 }
 
 export default function DashboardPage() {
-  const { user, accessToken, loading: authLoading } = useAuth();
+  const { user, accessToken, loading: authLoading, logout } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"dashboard" | "eventos" | "novo" | "config">("dashboard");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("Shows e Festivais");
+
+  const handleConfirmLogout = async () => {
+    await logout();
+    router.push("/");
+  };
 
 
   const [editingEvent, setEditingEvent] = useState<DashboardEventItem | null>(null);
@@ -203,10 +209,6 @@ export default function DashboardPage() {
     }
     fetchDashboardData();
   }, [authLoading, accessToken]);
-
-  const handleConfirmLogout = () => {
-    redirect("/");
-  };
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("pt-BR", {
