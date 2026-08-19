@@ -169,6 +169,16 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "novo" || tabParam === "eventos" || tabParam === "dashboard" || tabParam === "config") {
+        setActiveTab(tabParam);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (authLoading) return;
     if (!accessToken) {
       setLoading(false);

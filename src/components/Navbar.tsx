@@ -37,10 +37,19 @@ export function Navbar() {
           </nav>
 
           <div className={styles.navActions}>
-            <a href="#criar" className={styles.navActionItem}>
+            <Link
+              href="/dashboard?tab=novo"
+              className={styles.navActionItem}
+              onClick={(e) => {
+                if (!user) {
+                  e.preventDefault();
+                  openAuth("login");
+                }
+              }}
+            >
               <PlusIcon size={15} />
               <span>Criar evento</span>
-            </a>
+            </Link>
             <Link href="/tickets" className={styles.navActionItem}>
               <TicketIcon size={15} />
               <span>Meus ingressos</span>
@@ -71,7 +80,19 @@ export function Navbar() {
         <div className={`${styles.mobilePanel} ${open ? styles.mobilePanelOpen : ""}`}>
           <Link href="/#shows" className={styles.mobileLink} onClick={close}>Shows</Link>
           <Link href="/#filmes" className={styles.mobileLink} onClick={close}>Filmes</Link>
-          <a href="#criar" className={styles.mobileLink} onClick={close}>Criar evento</a>
+          <Link
+            href="/dashboard?tab=novo"
+            className={styles.mobileLink}
+            onClick={(e) => {
+              close();
+              if (!user) {
+                e.preventDefault();
+                openAuth("login");
+              }
+            }}
+          >
+            Criar evento
+          </Link>
           <Link href="/tickets" className={styles.mobileLink} onClick={close}>Meus ingressos</Link>
 
           {user ? (
