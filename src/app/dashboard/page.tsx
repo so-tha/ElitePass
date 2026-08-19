@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./page.module.css";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { EventFormModal, type EditableEvent } from "@/components/EventFormModal";
 import { useAuth } from "@/lib/auth-context";
 import {
   TicketIcon,
@@ -24,6 +25,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<EditableEvent | null>(null);
+  const [editLoadingId, setEditLoadingId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; title: string } | null>(null);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== "ORGANIZER") {
@@ -31,39 +37,74 @@ export default function DashboardPage() {
     }
   }, [authLoading, user, router]);
 
+  const fetchDashboardData = useCallback(async () => {
+    if (!accessToken) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch("/api/organizer/dashboard", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erro ao carregar dados do dashboard.");
+      setData(json);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar dados do dashboard.");
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken]);
+
   useEffect(() => {
     if (authLoading || !user || user.role !== "ORGANIZER" || !accessToken) return;
+    const timer = setTimeout(() => {
+      void fetchDashboardData();
+    }, 0);
 
-    let cancelled = false;
-
-    async function fetchDashboardData() {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await fetch("/api/organizer/dashboard", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? "Erro ao carregar dados do dashboard.");
-        if (!cancelled) setData(json);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Erro ao carregar dados do dashboard.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    fetchDashboardData();
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, user, accessToken]);
+    return () => clearTimeout(timer);
+  }, [authLoading, user, accessToken, fetchDashboardData]);
 
   const handleConfirmLogout = async () => {
     await logout();
     router.push("/");
+  };
+
+  const openCreateModal = () => {
+    setEditingEvent(null);
+    setFormModalOpen(true);
+  };
+
+  const openEditModal = async (eventId: string) => {
+    if (!accessToken) return;
+    setEditLoadingId(eventId);
+    try {
+      const res = await fetch(`/api/organizer/events/${eventId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erro ao carregar evento.");
+      setEditingEvent(json.event);
+      setFormModalOpen(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar evento.");
+    } finally {
+      setEditLoadingId(null);
+    }
+  };
+
+  const handleCancelEvent = async () => {
+    if (!cancelTarget || !accessToken) return;
+    try {
+      const res = await fetch(`/api/organizer/events/${cancelTarget.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erro ao cancelar evento.");
+      fetchDashboardData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao cancelar evento.");
+    }
   };
 
   if (authLoading || !user || user.role !== "ORGANIZER") {
@@ -118,7 +159,10 @@ export default function DashboardPage() {
             <button
               type="button"
               className={`${styles.navItem} ${activeTab === "novo" ? styles.navItemActive : ""}`}
-              onClick={() => setActiveTab("novo")}
+              onClick={() => {
+                setActiveTab("novo");
+                openCreateModal();
+              }}
             >
               <PlusIcon size={18} />
               <span>Novo Evento</span>
@@ -202,7 +246,7 @@ export default function DashboardPage() {
           <button
             type="button"
             className={styles.btnNewEvent}
-            onClick={() => alert("Criar Novo Evento")}
+            onClick={openCreateModal}
           >
             <PlusIcon size={16} />
             <span>Novo Evento</span>
@@ -328,9 +372,25 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div className={styles.actionsCell}>
-                    <button type="button" className={styles.actionBtn} aria-label="Editar">✏️</button>
+                    <button
+                      type="button"
+                      className={styles.actionBtn}
+                      aria-label="Editar"
+                      disabled={editLoadingId === evt.id}
+                      onClick={() => openEditModal(evt.id)}
+                    >
+                      {editLoadingId === evt.id ? "…" : "✏️"}
+                    </button>
                     <button type="button" className={styles.actionBtn} aria-label="Visualizar">👁️</button>
-                    <button type="button" className={styles.actionBtn} aria-label="Mais">•••</button>
+                    <button
+                      type="button"
+                      className={styles.actionBtn}
+                      aria-label="Cancelar evento"
+                      disabled={evt.status === "CANCELADO"}
+                      onClick={() => setCancelTarget({ id: evt.id, title: evt.title })}
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
               ))
@@ -382,6 +442,24 @@ export default function DashboardPage() {
         description="Deseja realmente encerrar a sessão do painel do organizador?"
         confirmText="Sair"
         cancelText="Cancelar"
+        variant="danger"
+      />
+
+      <EventFormModal
+        isOpen={formModalOpen}
+        onClose={() => setFormModalOpen(false)}
+        onSaved={fetchDashboardData}
+        event={editingEvent}
+      />
+
+      <ConfirmModal
+        isOpen={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleCancelEvent}
+        title="Cancelar Evento"
+        description={`Tem certeza que deseja cancelar "${cancelTarget?.title}"? Ingressos já vendidos não serão afetados, mas o evento deixará de aparecer para novos compradores.`}
+        confirmText="Cancelar evento"
+        cancelText="Voltar"
         variant="danger"
       />
     </div>

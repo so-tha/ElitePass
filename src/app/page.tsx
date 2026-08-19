@@ -147,15 +147,20 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetchEvents();
-    fetchMovies();
+    const timer = setTimeout(() => {
+      fetchEvents();
+      fetchMovies();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchEvents, fetchMovies]);
 
   useEffect(() => {
     if (!search) {
-      fetchEvents();
-      fetchMovies();
-      return;
+      const timer = setTimeout(() => {
+        fetchEvents();
+        fetchMovies();
+      }, 0);
+      return () => clearTimeout(timer);
     }
     const timer = setTimeout(() => {
       fetchEvents(search);
