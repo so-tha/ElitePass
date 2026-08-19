@@ -77,6 +77,46 @@ const SORT_OPTIONS = [
   { label: "Maior Preço", desc: "Setores VIP" },
 ];
 
+type CategoryGroupKey = "SHOWS" | "TEATRO" | "COMEDIA" | "PALESTRA" | "CINEMA" | "OTHER";
+
+const CATEGORY_GROUPS: { key: CategoryGroupKey; title: string }[] = [
+  { key: "SHOWS", title: "Shows & Festivais" },
+  { key: "TEATRO", title: "Teatro & Dança" },
+  { key: "COMEDIA", title: "Comédia & Stand-up" },
+  { key: "PALESTRA", title: "Palestras & Cursos" },
+  { key: "CINEMA", title: "Cinema & Mostras" },
+  { key: "OTHER", title: "Outros Eventos" },
+];
+
+function getCategoryGroupKey(categoryStr: string): CategoryGroupKey {
+  const cat = categoryStr.toUpperCase();
+  if (cat === "OTHER") return "OTHER";
+  if (cat.includes("COMÉDIA") || cat.includes("COMEDY") || cat.includes("STAND-UP")) return "COMEDIA";
+  if (cat.includes("TEATRO") || cat.includes("ESPETÁCULO") || cat.includes("THEATRE") || cat.includes("THEATER") || cat.includes("DANÇA") || cat.includes("DANCE")) return "TEATRO";
+  if (cat.includes("PALESTRA") || cat.includes("CURSO") || cat.includes("WORKSHOP") || cat.includes("EDUCAÇÃO")) return "PALESTRA";
+  if (cat.includes("CINEMA") || cat.includes("FILME") || cat.includes("MOVIE") || cat.includes("FILM")) return "CINEMA";
+  if (cat.includes("POP") || cat.includes("MPB") || cat.includes("ROCK") || cat.includes("SHOW") || cat.includes("MUSIC") || cat.includes("MÚSICA") || cat.includes("SPORT") || cat.includes("ESPORTE")) return "SHOWS";
+  return "OTHER";
+}
+
+function getCategoryBadge(categoryStr: string) {
+  const key = getCategoryGroupKey(categoryStr);
+  switch (key) {
+    case "COMEDIA":
+      return { key, label: "COMÉDIA", bg: "rgba(255, 178, 44, 0.18)", color: "#FFB22C", border: "1px solid #FFB22C" };
+    case "TEATRO":
+      return { key, label: "TEATRO", bg: "rgba(239, 68, 68, 0.18)", color: "#EF4444", border: "1px solid #EF4444" };
+    case "PALESTRA":
+      return { key, label: "PALESTRA", bg: "rgba(16, 185, 129, 0.18)", color: "#10B981", border: "1px solid #10B981" };
+    case "SHOWS":
+      return { key, label: "MPB/POP", bg: "rgba(59, 130, 246, 0.18)", color: "#3B82F6", border: "1px solid #3B82F6" };
+    case "CINEMA":
+      return { key, label: "CINEMA", bg: "rgba(139, 92, 246, 0.18)", color: "#A855F7", border: "1px solid #A855F7" };
+    default:
+      return { key, label: categoryStr.toUpperCase().substring(0, 10), bg: "rgba(255, 178, 44, 0.18)", color: "#FFB22C", border: "1px solid #FFB22C" };
+  }
+}
+
 export default function Home() {
   const router = useRouter();
   const [events, setEvents] = useState<TMEvent[]>([]);
@@ -231,25 +271,15 @@ export default function Home() {
     return [...eventItems, ...movieItems];
   }, [events, movies]);
 
-function getCategoryBadge(categoryStr: string) {
-  const cat = categoryStr.toUpperCase();
-  if (cat.includes("COMÉDIA") || cat.includes("STAND-UP")) {
-    return { label: "COMÉDIA", bg: "rgba(255, 178, 44, 0.18)", color: "#FFB22C", border: "1px solid #FFB22C" };
-  }
-  if (cat.includes("TEATRO") || cat.includes("ESPETÁCULO")) {
-    return { label: "TEATRO", bg: "rgba(239, 68, 68, 0.18)", color: "#EF4444", border: "1px solid #EF4444" };
-  }
-  if (cat.includes("PALESTRA") || cat.includes("CURSO") || cat.includes("WORKSHOP") || cat.includes("EDUCAÇÃO")) {
-    return { label: "PALESTRA", bg: "rgba(16, 185, 129, 0.18)", color: "#10B981", border: "1px solid #10B981" };
-  }
-  if (cat.includes("POP") || cat.includes("MPB") || cat.includes("ROCK") || cat.includes("SHOW")) {
-    return { label: "MPB/POP", bg: "rgba(59, 130, 246, 0.18)", color: "#3B82F6", border: "1px solid #3B82F6" };
-  }
-  if (cat.includes("CINEMA") || cat.includes("FILME") || cat.includes("MOVIE")) {
-    return { label: "CINEMA", bg: "rgba(139, 92, 246, 0.18)", color: "#A855F7", border: "1px solid #A855F7" };
-  }
-  return { label: categoryStr.toUpperCase().substring(0, 10), bg: "rgba(255, 178, 44, 0.18)", color: "#FFB22C", border: "1px solid #FFB22C" };
-}
+  const eventsByGroup = useMemo(() => {
+    const map = new Map<CategoryGroupKey, TMEvent[]>();
+    for (const event of events) {
+      const key = getCategoryGroupKey(getCategory(event));
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(event);
+    }
+    return map;
+  }, [events]);
 
   const renderEventCard = (event: TMEvent) => {
     const catInfo = getCategoryBadge(getCategory(event));
@@ -605,24 +635,42 @@ function getCategoryBadge(categoryStr: string) {
           </section>
         ) : (
           <>
-        {!error && (
+        {!error && loading && (
           <section id="shows" className={styles.showsSection}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Shows e Eventos</h2>
-              {loading && <span className={styles.loadingDot}>Buscando...</span>}
+              <span className={styles.loadingDot}>Buscando...</span>
             </div>
-
-            {!loading && events.length === 0 ? (
-              <p className={styles.noResults}>Nenhum show encontrado para essa busca.</p>
-            ) : (
-              <div className={styles.showsGrid}>
-                {loading
-                  ? Array.from({ length: 9 }).map((_, i) => <CardSkeleton key={i} />)
-                  : events.slice(0, 9).map((event) => renderEventCard(event))}
-              </div>
-            )}
+            <div className={styles.showsGrid}>
+              {Array.from({ length: 9 }).map((_, i) => <CardSkeleton key={i} />)}
+            </div>
           </section>
         )}
+
+        {!error && !loading && events.length === 0 && (
+          <section id="shows" className={styles.showsSection}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Shows e Eventos</h2>
+            </div>
+            <p className={styles.noResults}>Nenhum show encontrado para essa busca.</p>
+          </section>
+        )}
+
+        {!error && !loading &&
+          CATEGORY_GROUPS.map((group) => {
+            const groupEvents = eventsByGroup.get(group.key) ?? [];
+            if (groupEvents.length === 0) return null;
+            return (
+              <section key={group.key} id={`shows-${group.key.toLowerCase()}`} className={styles.showsSection}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>{group.title}</h2>
+                </div>
+                <div className={styles.showsGrid}>
+                  {groupEvents.slice(0, 9).map((event) => renderEventCard(event))}
+                </div>
+              </section>
+            );
+          })}
 
         <section id="filmes" className={styles.showsSection}>
           <div className={styles.sectionHeader}>
