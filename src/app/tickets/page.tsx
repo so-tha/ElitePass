@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { useAuth } from "@/lib/auth-context";
 import { formatDate } from "@/lib/ticketmaster";
 import {
@@ -12,9 +13,11 @@ import {
   CalendarIcon,
   MapPinIcon,
   AlertTriangleIcon,
+  CheckIcon,
   XIcon,
 } from "@/components/icons";
 import type { OrderItem, OrderTicketItem } from "@/app/api/orders/mine/route";
+import type { CancelTicketResponse } from "@/app/api/tickets/[id]/cancel/route";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=500&auto=format&fit=crop&q=80";
@@ -31,6 +34,19 @@ interface TicketItem {
   status: OrderTicketItem["status"];
   orderStatus: OrderItem["status"];
   imageUrl: string;
+}
+
+/** Espelha (no cliente) as regras de elegibilidade que o backend valida de forma autoritativa. */
+function isCancellable(tkt: TicketItem): boolean {
+  if (tkt.status !== "VALID" || tkt.orderStatus === "CANCELLED") return false;
+  if (!tkt.eventDate) return true;
+
+  const eventDay = new Date(tkt.eventDate);
+  if (Number.isNaN(eventDay.getTime())) return true;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return eventDay.getTime() >= today.getTime();
 }
 
 function flattenOrders(orders: OrderItem[]): TicketItem[] {
@@ -59,6 +75,9 @@ export default function TicketsPage() {
   const [statusFilter, setStatusFilter] = useState<"ativos" | "pendentes" | "cancelados" | "encerrados">("ativos");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedQrTicket, setSelectedQrTicket] = useState<TicketItem | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<TicketItem | null>(null);
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,6 +117,43 @@ export default function TicketsPage() {
       cancelled = true;
     };
   }, [authLoading, user, accessToken]);
+
+  function showToast(message: string) {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 4000);
+  }
+
+  async function handleConfirmCancel() {
+    if (!cancelTarget || !accessToken) return;
+    const ticketId = cancelTarget.id;
+
+    setPendingCancelId(ticketId);
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}/cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data: CancelTicketResponse = await res.json();
+
+      if (!res.ok) {
+        alert(data.error ?? "Não foi possível cancelar o ingresso. Tente novamente.");
+        return;
+      }
+
+      setTickets((prev) =>
+        prev.map((t) => (t.id === ticketId ? { ...t, status: "CANCELLED" } : t))
+      );
+      showToast(
+        data.refunded
+          ? "Ingresso cancelado e pagamento estornado com sucesso."
+          : "Ingresso cancelado com sucesso."
+      );
+    } catch {
+      alert("Não foi possível conectar ao servidor. Tente novamente.");
+    } finally {
+      setPendingCancelId(null);
+    }
+  }
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((tkt) => {
@@ -238,14 +294,26 @@ export default function TicketsPage() {
 
                       <div className={styles.cardFooter}>
                         <span className={styles.ticketCode}>{tkt.code}</span>
-                        <button
-                          type="button"
-                          className={styles.btnQrCode}
-                          onClick={() => setSelectedQrTicket(tkt)}
-                        >
-                          <TicketIcon size={14} />
-                          <span>Ver QR Code</span>
-                        </button>
+                        <div className={styles.cardActions}>
+                          {isCancellable(tkt) && (
+                            <button
+                              type="button"
+                              className={styles.btnCancelTicket}
+                              disabled={pendingCancelId === tkt.id}
+                              onClick={() => setCancelTarget(tkt)}
+                            >
+                              {pendingCancelId === tkt.id ? "Cancelando..." : "Cancelar"}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={styles.btnQrCode}
+                            onClick={() => setSelectedQrTicket(tkt)}
+                          >
+                            <TicketIcon size={14} />
+                            <span>Ver QR Code</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -355,6 +423,26 @@ export default function TicketsPage() {
               Apresente este QR Code na portaria do evento para acesso nominal.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* ── CANCEL CONFIRMATION MODAL ── */}
+      <ConfirmModal
+        isOpen={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleConfirmCancel}
+        title="Cancelar Ingresso"
+        description={`Deseja realmente cancelar o ingresso de "${cancelTarget?.eventName}"? O valor pago será estornado e a vaga será devolvida ao estoque. Essa ação não pode ser desfeita.`}
+        confirmText="Cancelar ingresso"
+        cancelText="Voltar"
+        variant="danger"
+      />
+
+      {/* ── SUCCESS TOAST ── */}
+      {toastMessage && (
+        <div className={styles.toastSuccess}>
+          <CheckIcon size={16} />
+          <span>{toastMessage}</span>
         </div>
       )}
     </div>

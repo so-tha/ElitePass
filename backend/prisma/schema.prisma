@@ -158,6 +158,7 @@ model Ticket {
 
   status      TicketStatus @default(VALID)
   usedAt      DateTime?    // preenchido pela portaria ao validar
+  cancelledAt DateTime?    // preenchido quando o cliente cancela o ingresso
 
   seatLabel   String?      // assento vinculado, quando o evento usa mapa de assentos (ex.: "A1")
 

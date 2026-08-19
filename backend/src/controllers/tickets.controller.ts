@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../prisma";
+import { stripe } from "../lib/stripe";
 import { verifyQrData } from "../lib/ticketCode";
+import { broadcastSeatUpdate } from "../lib/socket";
 import { AuthenticatedRequest } from "../middlewares/requireAuth";
 import type { Prisma } from "../generated/client/client";
 
@@ -157,6 +159,99 @@ export async function validateTicket(req: Request, res: Response): Promise<void>
         error:  REASON_MESSAGES[err.reason] ?? "Não foi possível validar o ingresso.",
         ...err.extra,
       });
+      return;
+    }
+    throw err;
+  }
+}
+
+/** Erro tipado para os desfechos de cancelamento (mapeado para reason no JSON de resposta). */
+class CancelError extends Error {
+  constructor(public reason: string, public status: number) {
+    super(reason);
+  }
+}
+
+const CANCEL_REASON_MESSAGES: Record<string, string> = {
+  NOT_FOUND:          "Ingresso não encontrado.",
+  ALREADY_CANCELLED:  "Este ingresso já foi cancelado.",
+  ALREADY_USED:       "Ingressos já validados na portaria não podem ser cancelados.",
+  EVENT_PASSED:       "Não é possível cancelar o ingresso de um evento que já ocorreu.",
+  REFUND_FAILED:      "Não foi possível estornar o pagamento. Tente novamente em instantes.",
+};
+
+/**
+ * POST /tickets/:id/cancel — Cliente cancela um ingresso próprio.
+ *
+ * Estorna o pagamento proporcional na Stripe, devolve a vaga ao estoque do evento (soldCount ou
+ * assento reservado) e marca o ingresso como CANCELLED. Se todos os ingressos do pedido forem
+ * cancelados, o pedido também é marcado como CANCELLED.
+ */
+export async function cancelTicket(req: Request, res: Response): Promise<void> {
+  const id = req.params.id as string;
+  const { userId } = (req as AuthenticatedRequest).user;
+
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where:   { id },
+      include: { order: { include: { event: true } } },
+    });
+
+    if (!ticket || ticket.order.userId !== userId) throw new CancelError("NOT_FOUND", 404);
+    if (ticket.status === "CANCELLED") throw new CancelError("ALREADY_CANCELLED", 409);
+    if (ticket.status === "USED") throw new CancelError("ALREADY_USED", 409);
+
+    const eventDate = ticket.order.event?.date ?? (ticket.order.eventDate ? new Date(ticket.order.eventDate) : null);
+    if (eventDate && eventDate.getTime() < Date.now()) throw new CancelError("EVENT_PASSED", 409);
+
+    let refunded = false;
+    if (ticket.order.paymentIntentId) {
+      try {
+        await stripe.refunds.create({
+          payment_intent: ticket.order.paymentIntentId,
+          amount:         Math.round((ticket.order.totalAmount / ticket.order.quantity) * 100),
+        });
+        refunded = true;
+      } catch {
+        throw new CancelError("REFUND_FAILED", 502);
+      }
+    }
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.ticket.update({
+        where: { id },
+        data:  { status: "CANCELLED", cancelledAt: new Date() },
+      });
+
+      if (ticket.order.localEventId) {
+        await tx.event.update({
+          where: { id: ticket.order.localEventId },
+          data:  { soldCount: { decrement: 1 } },
+        });
+      }
+
+      if (ticket.seatLabel) {
+        await tx.seat.deleteMany({
+          where: { eventId: ticket.order.eventId, label: ticket.seatLabel },
+        });
+      }
+
+      const remainingActive = await tx.ticket.count({
+        where: { orderId: ticket.orderId, status: { not: "CANCELLED" } },
+      });
+      if (remainingActive === 0) {
+        await tx.order.update({ where: { id: ticket.orderId }, data: { status: "CANCELLED" } });
+      }
+    });
+
+    if (ticket.seatLabel) {
+      broadcastSeatUpdate(ticket.order.eventId, { label: ticket.seatLabel, status: "AVAILABLE" });
+    }
+
+    res.json({ message: "Ingresso cancelado com sucesso.", refunded });
+  } catch (err) {
+    if (err instanceof CancelError) {
+      res.status(err.status).json({ error: CANCEL_REASON_MESSAGES[err.reason], reason: err.reason });
       return;
     }
     throw err;

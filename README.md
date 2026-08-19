@@ -25,6 +25,7 @@ O **ElitePass** é uma plataforma de compra e gestão de ingressos para shows e 
 - [x] Ingresso digital com QR Code
 - [x] Compartilhamento de ingresso por link
 - [x] Área do cliente (meus ingressos)
+- [x] Cancelamento de ingresso com devolução ao estoque e estorno na Stripe
 
 ### Frontend (organizador)
 - [x] Dashboard de criação e gestão de eventos (em progresso)
