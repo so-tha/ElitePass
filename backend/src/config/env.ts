@@ -15,6 +15,8 @@ const envSchema = z
     TICKETMASTER_API_KEY: z.string().optional(),
     TMDB_API_KEY: z.string().optional(),
     TMDB_READ_ACCESS_TOKEN: z.string().optional(),
+
+    STRIPE_SECRET_KEY: z.string().min(1, "STRIPE_SECRET_KEY é obrigatório"),
   })
   .refine((data) => data.NODE_ENV !== "production" || !!data.FRONTEND_URL, {
     message: "FRONTEND_URL é obrigatório em produção (necessário para configurar o CORS corretamente).",

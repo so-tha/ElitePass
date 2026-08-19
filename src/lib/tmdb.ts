@@ -7,10 +7,10 @@
 
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
-const READ_TOKEN = process.env.TMDB_READ_TOKEN;
+const READ_TOKEN = process.env.TMDB_READ_ACCESS_TOKEN;
 
 if (!READ_TOKEN) {
-  console.warn("⚠️  TMDB_READ_TOKEN não definido no .env.local");
+  console.warn("⚠️  TMDB_READ_ACCESS_TOKEN não definido no .env.local");
 }
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────

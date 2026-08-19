@@ -38,6 +38,7 @@ enum EventStatus {
 enum OrderStatus {
   PENDING
   CONFIRMED
+  FAILED
   CANCELLED
 }
 
@@ -124,8 +125,9 @@ model Order {
   fee         Float       // taxa de serviço cobrada (12%)
   totalAmount Float
 
-  status      OrderStatus @default(CONFIRMED)
-  createdAt   DateTime    @default(now())
+  status          OrderStatus @default(PENDING)
+  paymentIntentId String?     @unique
+  createdAt       DateTime    @default(now())
 
   tickets     Ticket[]
 }

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma";
+import { stripe } from "../lib/stripe";
 import { generateTicketCode, generateQrData } from "../lib/ticketCode";
 import { tiersArraySchema } from "../lib/eventTiers";
 import { AuthenticatedRequest } from "../middlewares/requireAuth";
@@ -32,75 +33,132 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   let { tierLabel, priceUnit } = parse.data;
 
   try {
-    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-
-      const localEvent = await tx.event.findUnique({ where: { id: eventId } });
-      if (localEvent) {
-        if (localEvent.status !== "PUBLISHED") {
-          throw new Error("EVENT_NOT_AVAILABLE");
-        }
-
-        const tiers = tiersArraySchema.parse(localEvent.tiers);
-        const tier  = tiers.find((t) => t.id === tierId);
-        if (!tier) {
-          throw new Error("TIER_NOT_FOUND");
-        }
-
-        tierLabel = tier.label;
-        priceUnit = tier.priceUnit;
-
-        if (localEvent.soldCount + quantity > localEvent.capacity) {
-          throw new Error("CAPACITY_EXCEEDED");
-        }
-
-        await tx.event.update({
-          where: { id: eventId },
-          data:  { soldCount: { increment: quantity } },
-        });
-      }
-
-      const fee         = Math.round(priceUnit * quantity * 0.12 * 100) / 100;
-      const totalAmount = Math.round(priceUnit * quantity * 100) / 100 + fee;
-
-      const newOrder = await tx.order.create({
-        data: {
-          userId,
-          eventId, localEventId: localEvent ? eventId : null,
-          eventType, eventName, eventDate, eventVenue,
-          tierId, tierLabel, priceUnit, quantity, fee, totalAmount,
-          status: "CONFIRMED",
-        },
-      });
-
-      const ticketData = Array.from({ length: quantity }, () => {
-        const code   = generateTicketCode(eventName, tierLabel);
-        const qrData = generateQrData(code);
-        return { orderId: newOrder.id, code, qrData };
-      });
-
-      await tx.ticket.createMany({ data: ticketData });
-
-      return tx.order.findUnique({
-        where: { id: newOrder.id },
-        include: { tickets: true },
-      });
-    });
-
-    res.status(201).json({ order });
-  } catch (err) {
-    if (err instanceof Error) {
-      if (err.message === "EVENT_NOT_AVAILABLE") {
+    const localEvent = await prisma.event.findUnique({ where: { id: eventId } });
+    if (localEvent) {
+      if (localEvent.status !== "PUBLISHED") {
         res.status(400).json({ error: "Este evento não está disponível para vendas." });
         return;
       }
-      if (err.message === "TIER_NOT_FOUND") {
+
+      const tiers = tiersArraySchema.parse(localEvent.tiers);
+      const tier  = tiers.find((t) => t.id === tierId);
+      if (!tier) {
         res.status(400).json({ error: "Setor/tier inválido para este evento." });
         return;
       }
-      if (err.message === "CAPACITY_EXCEEDED") {
+
+      tierLabel = tier.label;
+      priceUnit = tier.priceUnit;
+
+      if (localEvent.soldCount + quantity > localEvent.capacity) {
         res.status(409).json({ error: "Ingressos esgotados para a quantidade solicitada." });
         return;
       }
+    }
+
+    const fee         = Math.round(priceUnit * quantity * 0.12 * 100) / 100;
+    const totalAmount = Math.round(priceUnit * quantity * 100) / 100 + fee;
+
+    const order = await prisma.order.create({
+      data: {
+        userId,
+        eventId, localEventId: localEvent ? eventId : null,
+        eventType, eventName, eventDate, eventVenue,
+        tierId, tierLabel, priceUnit, quantity, fee, totalAmount,
+        status: "PENDING",
+      },
+    });
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount:              Math.round(totalAmount * 100),
+      currency:            "brl",
+      payment_method_types: ["card"],
+      metadata:            { orderId: order.id, userId },
+    });
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data:  { paymentIntentId: paymentIntent.id },
+    });
+
+    res.status(201).json({
+      order: { ...order, tickets: [] },
+      clientSecret: paymentIntent.client_secret,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "TIER_NOT_FOUND") {
+      res.status(400).json({ error: "Setor/tier inválido para este evento." });
+      return;
+    }
+    throw err;
+  }
+}
+
+/** POST /orders/:id/confirm — Verifica o pagamento na Stripe e emite os ingressos */
+export async function confirmOrderPayment(req: Request, res: Response): Promise<void> {
+  const { userId } = (req as AuthenticatedRequest).user;
+  const orderId    = req.params.id as string;
+
+  const order = await prisma.order.findUnique({
+    where:   { id: orderId },
+    include: { tickets: true },
+  });
+
+  if (!order || order.userId !== userId) {
+    res.status(404).json({ error: "Pedido não encontrado." });
+    return;
+  }
+
+  if (order.status === "CONFIRMED") {
+    res.json({ order });
+    return;
+  }
+
+  if (order.status !== "PENDING" || !order.paymentIntentId) {
+    res.status(409).json({ error: "Este pedido não está pendente de pagamento." });
+    return;
+  }
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
+
+  if (paymentIntent.status !== "succeeded") {
+    res.status(402).json({
+      error: paymentIntent.last_payment_error?.message ?? "Pagamento não aprovado.",
+    });
+    return;
+  }
+
+  try {
+    const confirmedOrder = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      if (order.localEventId) {
+        const localEvent = await tx.event.findUnique({ where: { id: order.localEventId } });
+        if (!localEvent || localEvent.soldCount + order.quantity > localEvent.capacity) {
+          throw new Error("CAPACITY_EXCEEDED");
+        }
+        await tx.event.update({
+          where: { id: order.localEventId },
+          data:  { soldCount: { increment: order.quantity } },
+        });
+      }
+
+      const ticketData = Array.from({ length: order.quantity }, () => {
+        const code   = generateTicketCode(order.eventName, order.tierLabel);
+        const qrData = generateQrData(code);
+        return { orderId: order.id, code, qrData };
+      });
+      await tx.ticket.createMany({ data: ticketData });
+
+      await tx.order.update({ where: { id: order.id }, data: { status: "CONFIRMED" } });
+
+      return tx.order.findUnique({ where: { id: order.id }, include: { tickets: true } });
+    });
+
+    res.json({ order: confirmedOrder });
+  } catch (err) {
+    if (err instanceof Error && err.message === "CAPACITY_EXCEEDED") {
+      await prisma.order.update({ where: { id: order.id }, data: { status: "FAILED" } });
+      res.status(409).json({ error: "Ingressos esgotados durante o pagamento. Entre em contato com o suporte para reembolso." });
+      return;
     }
     throw err;
   }

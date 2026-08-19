@@ -22,6 +22,11 @@ export interface CreateOrderResponse {
     createdAt: string;
     tickets: { id: string; code: string; qrData: string }[];
   };
+  clientSecret: string;
+}
+
+export interface ConfirmOrderResponse {
+  order: CreateOrderResponse["order"];
 }
 
 export async function POST(req: NextRequest) {

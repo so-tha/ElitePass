@@ -2,11 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import type { StripeCardElementOptions } from "@stripe/stripe-js";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
 import { Stepper } from "@/components/Stepper";
 import { useAuth } from "@/lib/auth-context";
-import type { CreateOrderPayload, CreateOrderResponse } from "@/app/api/orders/route";
+import type { CreateOrderPayload, CreateOrderResponse, ConfirmOrderResponse } from "@/app/api/orders/route";
 import {
   CalendarIcon,
   MapPinIcon,
@@ -162,10 +165,34 @@ function Skeleton() {
   );
 }
 
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "");
+
+const cardElementOptions: StripeCardElementOptions = {
+  style: {
+    base: {
+      color: "#f7f7f7",
+      fontSize: "15px",
+      fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif",
+      "::placeholder": { color: "#555555" },
+    },
+    invalid: { color: "#ff6b6b" },
+  },
+};
+
 export default function EventPage() {
+  return (
+    <Elements stripe={stripePromise}>
+      <EventCheckout />
+    </Elements>
+  );
+}
+
+function EventCheckout() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, accessToken } = useAuth();
+  const stripe = useStripe();
+  const elements = useElements();
 
   const [event, setEvent] = useState<TMEvent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,10 +206,13 @@ export default function EventPage() {
   const [orderCode,  setOrderCode]  = useState("");
   const [ticketCode, setTicketCode] = useState("");
 
-  const [form, setForm] = useState({ name: "", email: "", cpf: "", card: "", expiry: "", cvv: "" });
+  const [form, setForm] = useState({ name: "", email: "", cpf: "" });
   const [formErrors, setFormErrors] = useState<Partial<typeof form>>({});
   const [processing, setProcessing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const [cardComplete, setCardComplete] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const [pendingOrder, setPendingOrder] = useState<{ id: string; clientSecret: string } | null>(null);
 
   const fetchEvent = useCallback(async () => {
     setLoading(true);
@@ -215,13 +245,7 @@ export default function EventPage() {
   const maskCPF = (v: string) =>
     v.replace(/\D/g, "").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2").slice(0, 14);
 
-  const maskCard = (v: string) =>
-    v.replace(/\D/g, "").replace(/(\d{4})/g, "$1 ").trim().slice(0, 19);
-
-  const maskExpiry = (v: string) =>
-    v.replace(/\D/g, "").replace(/(\d{2})(\d)/, "$1/$2").slice(0, 5);
-
-  // Validadores de CPF e Cartão (Algoritmo de Luhn e Módulo 11)
+  // Validador de CPF (Módulo 11)
   const isValidCPF = (cpf: string): boolean => {
     const digits = cpf.replace(/\D/g, "");
     if (digits.length !== 11) return false;
@@ -246,49 +270,11 @@ export default function EventPage() {
     return true;
   };
 
-  const isValidCreditCard = (card: string): boolean => {
-    const digits = card.replace(/\D/g, "");
-    if (digits.length < 13 || digits.length > 19) return false;
-    if (/^(\d)\1+$/.test(digits)) return false; // Rejeita 0000 0000 0000 0000, 1111... etc.
-
-    let sum = 0;
-    let shouldDouble = false;
-    for (let i = digits.length - 1; i >= 0; i--) {
-      let digit = parseInt(digits.charAt(i), 10);
-      if (shouldDouble) {
-        digit *= 2;
-        if (digit > 9) digit -= 9;
-      }
-      sum += digit;
-      shouldDouble = !shouldDouble;
-    }
-    return sum % 10 === 0;
-  };
-
-  const isValidExpiry = (expiry: string): boolean => {
-    if (!/^\d{2}\/\d{2}$/.test(expiry)) return false;
-    const [mStr, yStr] = expiry.split("/");
-    const month = parseInt(mStr, 10);
-    const year = 2000 + parseInt(yStr, 10);
-    if (month < 1 || month > 12) return false;
-
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-
-    if (year < currentYear) return false;
-    if (year === currentYear && month < currentMonth) return false;
-    return true;
-  };
-
   const validate = () => {
     const errs: Partial<typeof form> = {};
     if (!form.name.trim() || form.name.trim().length < 3) errs.name = "Nome completo obrigatório";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "E-mail inválido";
     if (!isValidCPF(form.cpf)) errs.cpf = "CPF inválido (ex: 123.456.789-00)";
-    if (!isValidCreditCard(form.card)) errs.card = "Número de cartão inválido";
-    if (!isValidExpiry(form.expiry)) errs.expiry = "Validade inválida (MM/AA)";
-    if (form.cvv.replace(/\D/g, "").length < 3) errs.cvv = "CVV inválido (3 ou 4 dígitos)";
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -299,32 +285,70 @@ export default function EventPage() {
       setPurchaseError("Você precisa estar logado para finalizar a compra. Faça login pelo menu superior.");
       return;
     }
+    if (!stripe || !elements) return;
+
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement || !cardComplete) {
+      setPurchaseError("Preencha os dados do cartão corretamente.");
+      return;
+    }
 
     setPurchaseError(null);
     setProcessing(true);
     try {
-      const payload: CreateOrderPayload = {
-        eventId: event!.id,
-        eventType: "SHOW",
-        eventName: event!.name,
-        eventDate: event!.dates.start.localDate,
-        eventVenue: getVenue(event!),
-        tierId: selectedTier!.id,
-        tierLabel: selectedTier!.label,
-        priceUnit: selectedTier!.price,
-        quantity: qty,
-      };
+      let order = pendingOrder;
 
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify(payload),
+      if (!order) {
+        const payload: CreateOrderPayload = {
+          eventId: event!.id,
+          eventType: "SHOW",
+          eventName: event!.name,
+          eventDate: event!.dates.start.localDate,
+          eventVenue: getVenue(event!),
+          tierId: selectedTier!.id,
+          tierLabel: selectedTier!.label,
+          priceUnit: selectedTier!.price,
+          quantity: qty,
+        };
+
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify(payload),
+        });
+        const data: CreateOrderResponse & { error?: string } = await res.json();
+        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Não foi possível concluir a compra.");
+
+        order = { id: data.order.id, clientSecret: data.clientSecret };
+        setPendingOrder(order);
+      }
+
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(order.clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: { name: form.name, email: form.email },
+        },
       });
-      const data: CreateOrderResponse & { error?: string } = await res.json();
-      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Não foi possível concluir a compra.");
 
-      setOrderCode(data.order.id);
-      setTicketCode(data.order.tickets[0]?.code ?? "");
+      if (stripeError) {
+        setPurchaseError(stripeError.message ?? "Pagamento recusado. Tente outro cartão.");
+        return;
+      }
+      if (paymentIntent?.status !== "succeeded") {
+        setPurchaseError("Pagamento não aprovado.");
+        return;
+      }
+
+      const confirmRes = await fetch(`/api/orders/${order.id}/confirm`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const confirmData: ConfirmOrderResponse & { error?: string } = await confirmRes.json();
+      if (!confirmRes.ok) throw new Error(typeof confirmData.error === "string" ? confirmData.error : "Não foi possível confirmar o pagamento.");
+
+      setOrderCode(confirmData.order.id);
+      setTicketCode(confirmData.order.tickets[0]?.code ?? "");
+      setPendingOrder(null);
       setStep(3);
     } catch (err) {
       setPurchaseError(err instanceof Error ? err.message : "Não foi possível concluir a compra.");
@@ -552,56 +576,23 @@ export default function EventPage() {
 
               <h2 className={styles.sectionTitle} style={{ marginTop: 32 }}>Dados do cartão</h2>
 
-              <div className={styles.cardVisual}>
-                <div className={styles.cardFront}>
-                  <span className={styles.cardChip}>▬▬</span>
-                  <p className={styles.cardNumber}>{form.card || "•••• •••• •••• ••••"}</p>
-                  <div className={styles.cardBottom}>
-                    <span className={styles.cardName}>{form.name || "NOME DO TITULAR"}</span>
-                    <span className={styles.cardExpiry}>{form.expiry || "MM/AA"}</span>
-                  </div>
-                  <div className={styles.cardGlare} />
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Cartão de crédito</label>
+                <div className={`${styles.input} ${styles.stripeCardWrap} ${cardError ? styles.inputError : ""}`}>
+                  <CardElement
+                    options={cardElementOptions}
+                    onChange={(e) => {
+                      setCardComplete(e.complete);
+                      setCardError(e.error?.message ?? null);
+                    }}
+                  />
                 </div>
+                {cardError && <span className={styles.fieldError}>{cardError}</span>}
               </div>
 
-              <div className={styles.formGrid}>
-                <div className={`${styles.formGroup} ${styles.colSpan2}`}>
-                  <label className={styles.label} htmlFor="field-card">Número do cartão</label>
-                  <input
-                    id="field-card"
-                    className={`${styles.input} ${formErrors.card ? styles.inputError : ""}`}
-                    placeholder="0000 0000 0000 0000"
-                    value={form.card}
-                    onChange={(e) => handleField("card", maskCard(e.target.value))}
-                  />
-                  {formErrors.card && <span className={styles.fieldError}>{formErrors.card}</span>}
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label} htmlFor="field-expiry">Validade</label>
-                  <input
-                    id="field-expiry"
-                    className={`${styles.input} ${formErrors.expiry ? styles.inputError : ""}`}
-                    placeholder="MM/AA"
-                    value={form.expiry}
-                    onChange={(e) => handleField("expiry", maskExpiry(e.target.value))}
-                  />
-                  {formErrors.expiry && <span className={styles.fieldError}>{formErrors.expiry}</span>}
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.label} htmlFor="field-cvv">CVV</label>
-                  <input
-                    id="field-cvv"
-                    className={`${styles.input} ${formErrors.cvv ? styles.inputError : ""}`}
-                    placeholder="•••"
-                    maxLength={4}
-                    value={form.cvv}
-                    onChange={(e) => handleField("cvv", e.target.value.replace(/\D/g, ""))}
-                  />
-                  {formErrors.cvv && <span className={styles.fieldError}>{formErrors.cvv}</span>}
-                </div>
-              </div>
+              <p className={styles.mockBadge}>
+                <AlertTriangleIcon size={12} /> Ambiente de teste Stripe — use 4242 4242 4242 4242 (aprovado) ou 4000 0000 0000 0002 (recusado), com qualquer CVC e validade futura.
+              </p>
             </section>
 
             {/* ORDER SUMMARY (repeat) */}
@@ -661,7 +652,11 @@ export default function EventPage() {
                 <button
                   id="btn-voltar-step"
                   className={styles.btnSecondary}
-                  onClick={() => setStep(1)}
+                  onClick={() => {
+                    setPendingOrder(null);
+                    setPurchaseError(null);
+                    setStep(1);
+                  }}
                   disabled={processing}
                 >
                   ← Voltar
