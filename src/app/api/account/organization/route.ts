@@ -1,0 +1,34 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export interface UpdateOrganizationPayload {
+  companyName: string;
+  companyCnpj: string;
+  companyEmail: string;
+  companyPhone: string;
+}
+
+export async function PATCH(req: NextRequest) {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader) {
+    return NextResponse.json({ error: "Token não fornecido." }, { status: 401 });
+  }
+
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
+
+  try {
+    const body = await req.text();
+    const res = await fetch(`${backendUrl}/api/account/organization`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", authorization: authHeader },
+      body,
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("[/api/account/organization]", err);
+    return NextResponse.json(
+      { error: "Não foi possível conectar ao servidor. Tente novamente em instantes." },
+      { status: 502 }
+    );
+  }
+}

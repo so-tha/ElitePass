@@ -25,7 +25,10 @@ export interface DashboardData {
   totalSales: number;
   ticketsSold: number;
   activeEventsCount: number;
-  conversionRate: number;
+  avgTicketPrice: number;
+  salesTrendPct: number;
+  ticketsTrendPct: number;
+  eventsTrendDelta: number;
   events: DashboardEventItem[];
   recentActivities: ActivityItem[];
 }

@@ -273,6 +273,15 @@
   gap: 4px;
 }
 
+.kpiTrendNeutral {
+  font-size: 12px;
+  color: #71717a;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* ── SEUS EVENTOS TABLE ── */
 .eventsCard {
   background: #121215;

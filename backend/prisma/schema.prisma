@@ -70,6 +70,11 @@ model User {
   addressCity         String?
   addressState        String?
 
+  companyName  String? // Nome da produtora (ORGANIZER)
+  companyCnpj  String?
+  companyEmail String?
+  companyPhone String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -19,6 +19,10 @@ const profileSelect = {
   addressNeighborhood: true,
   addressCity: true,
   addressState: true,
+  companyName: true,
+  companyCnpj: true,
+  companyEmail: true,
+  companyPhone: true,
   createdAt: true,
 } as const;
 
@@ -105,6 +109,34 @@ export async function updateAddress(req: Request, res: Response): Promise<void> 
       addressCity: city,
       addressState: state,
     },
+    select: profileSelect,
+  });
+
+  res.json({ user });
+}
+
+const updateOrganizationSchema = z.object({
+  companyName:  z.string().trim().min(1, "Nome da produtora é obrigatório"),
+  companyCnpj:  z.string().trim().min(1, "CNPJ é obrigatório"),
+  companyEmail: z.string().trim().email("E-mail comercial inválido"),
+  companyPhone: z.string().trim().min(1, "Telefone de suporte é obrigatório"),
+});
+
+/** PATCH /account/organization — Atualiza os dados da produtora (ORGANIZER) */
+export async function updateOrganization(req: Request, res: Response): Promise<void> {
+  const { userId } = (req as AuthenticatedRequest).user;
+
+  const parse = updateOrganizationSchema.safeParse(req.body);
+  if (!parse.success) {
+    res.status(400).json({ error: parse.error.flatten().fieldErrors });
+    return;
+  }
+
+  const { companyName, companyCnpj, companyEmail, companyPhone } = parse.data;
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { companyName, companyCnpj, companyEmail, companyPhone },
     select: profileSelect,
   });
 

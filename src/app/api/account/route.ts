@@ -15,6 +15,10 @@ export interface AccountProfile {
   addressNeighborhood: string | null;
   addressCity: string | null;
   addressState: string | null;
+  companyName: string | null;
+  companyCnpj: string | null;
+  companyEmail: string | null;
+  companyPhone: string | null;
   createdAt: string;
 }
 

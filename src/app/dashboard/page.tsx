@@ -22,148 +22,14 @@ import type { DashboardData, DashboardEventItem } from "@/app/api/organizer/dash
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 
-const CATEGORY_OPTIONS = [
-  { value: "Shows e Festivais", label: "Shows e Festivais" },
-  { value: "Teatro e Espetáculos", label: "Teatro e Espetáculos" },
-  { value: "Festas e Baladas", label: "Festas e Baladas" },
-  { value: "Cinema e Mostras", label: "Cinema e Mostras" },
-  { value: "Cursos e Workshops", label: "Educação e Negócios" },
-  { value: "Congressos e Seminários", label: "Congressos e Seminários" },
-  { value: "Eventos Corporativos", label: "Eventos Corporativos" },
-  { value: "Eventos Esportivos", label: "Esportes e Lazer" },
-  { value: "Eventos Gastronômicos", label: "Eventos Gastronômicos" },
-  { value: "Passeios e Parques", label: "Passeios e Parques" },
-  { value: "Eventos Religiosos", label: "Eventos Religiosos" },
-  { value: "Eventos Online", label: "Eventos Online" },
-];
-
-function CustomCategorySelect({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (val: string) => void;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const selectedOption = CATEGORY_OPTIONS.find((opt) => opt.value === value) || CATEGORY_OPTIONS[0];
-
-  return (
-    <div style={{ position: "relative", width: "100%" }}>
-      <button
-        type="button"
-        className={styles.formInput}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          textAlign: "left",
-          cursor: "pointer",
-          background: "#121215",
-          borderColor: isOpen ? "var(--color-primary)" : "rgba(255, 255, 255, 0.1)",
-          boxShadow: isOpen ? "0 0 12px var(--color-primary-glow)" : "none",
-        }}
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span>{selectedOption.label}</span>
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--color-primary)"
-          strokeWidth="2.5"
-          style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <>
-          <div
-            style={{ position: "fixed", inset: 0, zIndex: 99 }}
-            onClick={() => setIsOpen(false)}
-          />
-          <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 6px)",
-              left: 0,
-              right: 0,
-              zIndex: 100,
-              background: "#121215",
-              border: "1px solid rgba(255, 178, 44, 0.3)",
-              borderRadius: "12px",
-              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.9)",
-              maxHeight: "260px",
-              overflowY: "auto",
-              padding: "6px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "2px",
-            }}
-          >
-            {CATEGORY_OPTIONS.map((opt) => {
-              const isSelected = opt.value === value;
-              return (
-                <div
-                  key={opt.value}
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    color: isSelected ? "#000000" : "#ffffff",
-                    background: isSelected ? "var(--color-primary)" : "transparent",
-                    fontWeight: isSelected ? 700 : 500,
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.background = "var(--color-primary)";
-                      e.currentTarget.style.color = "#000000";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.background = "transparent";
-                      e.currentTarget.style.color = "#ffffff";
-                    }
-                  }}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                >
-                  {opt.label}
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 export default function DashboardPage() {
   const { user, accessToken, loading: authLoading, logout } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "eventos" | "novo" | "config">(() => {
-    if (typeof window === "undefined") return "dashboard";
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get("tab");
-    if (tabParam === "novo" || tabParam === "eventos" || tabParam === "dashboard" || tabParam === "config") {
-      return tabParam as "dashboard" | "eventos" | "novo" | "config";
-    }
-    return "dashboard";
-  });
+  const [activeTab, setActiveTab] = useState<"dashboard" | "eventos" | "config">("dashboard");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("Shows e Festivais");
 
   const handleConfirmLogout = async () => {
     await logout();
@@ -177,16 +43,22 @@ export default function DashboardPage() {
   const [pendingEventId, setPendingEventId] = useState<string | null>(null);
 
   const [previewEvent, setPreviewEvent] = useState<DashboardEventItem | null>(null);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [eventForm, setEventForm] = useState({
-    title: "",
-    venue: "",
-    city: "",
-    date: "",
-    capacity: 500,
-  });
+  const [previewTiers, setPreviewTiers] = useState<{ id: string; label: string; priceUnit: number; capacity: number }[] | null>(null);
+  const [previewTiersLoading, setPreviewTiersLoading] = useState(false);
 
-  // activeTab is initialized from URL params to avoid synchronous setState inside an effect
+  const [orgForm, setOrgForm] = useState({ companyName: "", companyCnpj: "", companyEmail: "", companyPhone: "" });
+  const [orgLoaded, setOrgLoaded] = useState(false);
+  const [orgSaving, setOrgSaving] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam === "eventos" || tabParam === "dashboard" || tabParam === "config") {
+      setActiveTab(tabParam);
+    } else if (tabParam === "novo") {
+      setIsCreateOpen(true);
+    }
+  }, []);
 
   const fetchDashboardData = async () => {
     if (!accessToken) return;
@@ -215,23 +87,78 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [authLoading, accessToken]);
 
+  useEffect(() => {
+    if (activeTab !== "config" || orgLoaded || !accessToken) return;
+
+    async function fetchOrganization() {
+      try {
+        const res = await fetch("/api/account", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (res.ok) {
+          const { user } = await res.json();
+          setOrgForm({
+            companyName: user.companyName ?? "",
+            companyCnpj: user.companyCnpj ?? "",
+            companyEmail: user.companyEmail ?? "",
+            companyPhone: user.companyPhone ?? "",
+          });
+        }
+      } catch (err) {
+        console.error("Erro ao carregar dados da produtora:", err);
+      } finally {
+        setOrgLoaded(true);
+      }
+    }
+    fetchOrganization();
+  }, [activeTab, orgLoaded, accessToken]);
+
+  const handleSaveOrganization = async () => {
+    if (!accessToken) return;
+    setOrgSaving(true);
+    try {
+      const res = await fetch("/api/account/organization", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(orgForm),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        const msg = typeof json.error === "string" ? json.error : "Verifique os dados informados.";
+        alert(msg);
+        return;
+      }
+      alert("Configurações salvas com sucesso!");
+    } catch (err) {
+      console.error("Erro ao salvar dados da produtora:", err);
+      alert("Não foi possível conectar ao servidor. Tente novamente.");
+    } finally {
+      setOrgSaving(false);
+    }
+  };
+
+  const renderPctTrend = (pct: number) => {
+    const rounded = Math.abs(pct).toFixed(1).replace(".", ",");
+    if (pct > 0) return <span className={styles.kpiTrendPositive}>↗ +{rounded}% vs. mês anterior</span>;
+    if (pct < 0) return <span className={styles.kpiTrendNegative}>↘ -{rounded}% vs. mês anterior</span>;
+    return <span className={styles.kpiTrendNeutral}>→ 0% vs. mês anterior</span>;
+  };
+
+  const renderDeltaTrend = (delta: number) => {
+    if (delta > 0) return <span className={styles.kpiTrendPositive}>↗ +{delta} vs. mês anterior</span>;
+    if (delta < 0) return <span className={styles.kpiTrendNegative}>↘ {delta} vs. mês anterior</span>;
+    return <span className={styles.kpiTrendNeutral}>→ 0 vs. mês anterior</span>;
+  };
+
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
       maximumFractionDigits: 0,
     }).format(val);
-  };
-
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setUploadedImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleOpenEdit = async (evt: DashboardEventItem) => {
@@ -270,6 +197,26 @@ export default function DashboardPage() {
 
   const handleEventSaved = () => {
     fetchDashboardData();
+  };
+
+  const handleOpenPreview = async (evt: DashboardEventItem) => {
+    setPreviewEvent(evt);
+    setPreviewTiers(null);
+    if (!accessToken) return;
+    setPreviewTiersLoading(true);
+    try {
+      const res = await fetch(`/api/organizer/events/${evt.id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const json = await res.json();
+      if (res.ok && json.event) {
+        setPreviewTiers(json.event.tiers ?? []);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar setores do evento:", err);
+    } finally {
+      setPreviewTiersLoading(false);
+    }
   };
 
   const getStatusClass = (status: DashboardEventItem["status"]) => {
@@ -378,8 +325,8 @@ export default function DashboardPage() {
 
             <button
               type="button"
-              className={`${styles.navItem} ${activeTab === "novo" ? styles.navItemActive : ""}`}
-              onClick={() => setActiveTab("novo")}
+              className={styles.navItem}
+              onClick={() => setIsCreateOpen(true)}
             >
               <PlusIcon size={18} />
               <span>Novo Evento</span>
@@ -419,30 +366,23 @@ export default function DashboardPage() {
             <h1 className={styles.pageTitle}>
               {activeTab === "dashboard" && "Dashboard"}
               {activeTab === "eventos" && "Meus Eventos"}
-              {activeTab === "novo" && "Novo Evento"}
               {activeTab === "config" && "Configurações"}
             </h1>
             <p className={styles.pageSubtitle}>
-              {activeTab === "dashboard" && "Bem-vindo(a), Maria Silva! Veja sua performance."}
+              {activeTab === "dashboard" && `Bem-vindo(a), ${user?.name ?? "Organizador(a)"}! Veja sua performance.`}
               {activeTab === "eventos" && "Gerencie todos os seus shows e eventos ativos na plataforma."}
-              {activeTab === "novo" && "Cadastre um novo evento na plataforma ElitePass."}
               {activeTab === "config" && "Gerencie os dados da sua produtora e preferências."}
             </p>
           </div>
 
-          {activeTab !== "novo" && (
-            <button
-              type="button"
-              className={styles.btnNewEvent}
-              onClick={() => {
-                setUploadedImage(null);
-                setActiveTab("novo");
-              }}
-            >
-              <PlusIcon size={16} />
-              <span>Novo Evento</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className={styles.btnNewEvent}
+            onClick={() => setIsCreateOpen(true)}
+          >
+            <PlusIcon size={16} />
+            <span>Novo Evento</span>
+          </button>
         </header>
 
         {activeTab === "dashboard" && (
@@ -461,7 +401,7 @@ export default function DashboardPage() {
                   <span className={styles.kpiValue}>
                     {loading ? "..." : formatCurrency(data?.totalSales ?? 0)}
                   </span>
-                  <span className={styles.kpiTrendPositive}>↗ +12% vs. mês anterior</span>
+                  {loading ? null : renderPctTrend(data?.salesTrendPct ?? 0)}
                 </div>
 
                 <div className={styles.kpiCard}>
@@ -472,7 +412,7 @@ export default function DashboardPage() {
                   <span className={styles.kpiValue}>
                     {loading ? "..." : (data?.ticketsSold ?? 0).toLocaleString("pt-BR")}
                   </span>
-                  <span className={styles.kpiTrendPositive}>↗ +8% vs. mês anterior</span>
+                  {loading ? null : renderPctTrend(data?.ticketsTrendPct ?? 0)}
                 </div>
 
                 <div className={styles.kpiCard}>
@@ -483,18 +423,18 @@ export default function DashboardPage() {
                   <span className={styles.kpiValue}>
                     {loading ? "..." : data?.activeEventsCount ?? 0}
                   </span>
-                  <span className={styles.kpiTrendPositive}>↗ +1 vs. mês anterior</span>
+                  {loading ? null : renderDeltaTrend(data?.eventsTrendDelta ?? 0)}
                 </div>
 
                 <div className={styles.kpiCard}>
                   <div className={styles.kpiCardHeader}>
-                    <span>Taxa de Conversão</span>
-                    <span style={{ fontSize: "14px", fontWeight: 700 }}>%</span>
+                    <span>Ticket Médio</span>
+                    <TicketIcon size={16} />
                   </div>
                   <span className={styles.kpiValue}>
-                    {loading ? "..." : `${data?.conversionRate ?? 0}%`}
+                    {loading ? "..." : formatCurrency(data?.avgTicketPrice ?? 0)}
                   </span>
-                  <span className={styles.kpiTrendNegative}>↘ -0,2% vs. mês anterior</span>
+                  <span className={styles.kpiTrendNeutral}>Valor médio por ingresso vendido</span>
                 </div>
               </div>
             </section>
@@ -562,7 +502,7 @@ export default function DashboardPage() {
                           type="button"
                           className={styles.actionBtn}
                           aria-label="Visualizar"
-                          onClick={() => setPreviewEvent(evt)}
+                          onClick={() => handleOpenPreview(evt)}
                         >
                           <EyeIcon size={14} />
                         </button>
@@ -681,7 +621,7 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       className={styles.btnCardAction}
-                      onClick={() => setPreviewEvent(evt)}
+                      onClick={() => handleOpenPreview(evt)}
                     >
                       <EyeIcon size={14} /> Ver
                     </button>
@@ -716,79 +656,6 @@ export default function DashboardPage() {
           </section>
         )}
 
-        {activeTab === "novo" && (
-          <div className={styles.formCard}>
-            <form
-              className={styles.formGrid}
-              onSubmit={(e) => {
-                e.preventDefault();
-                alert("Novo evento cadastrado com sucesso!");
-                setActiveTab("eventos");
-              }}
-            > 
-              <div className={styles.formGroupFull}>
-                <label className={styles.formLabel}>Nome do Evento / Filme</label>
-                <input type="text" className={styles.formInput} placeholder="Ex: Show Vintage Culture ou Avatar 3: Fogo e Cinzas" required />
-              </div>
-              <div className={styles.formGroupFull}>
-                <label className={styles.formLabel}>Imagem do Evento (Upload do Computador)</label>
-                <div className={styles.imageDropzone}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className={styles.fileInput}
-                    onChange={handleImageFileChange}
-                  />
-                  {uploadedImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={uploadedImage} alt="Preview da Imagem" className={styles.uploadPreview} />
-                  ) : (
-                    <div className={styles.uploadIconText}>
-                      <PlusIcon size={24} />
-                      <span>Clique ou arraste uma imagem aqui (PNG, JPG, WEBP)</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Categoria do Evento</label>
-                <CustomCategorySelect value={selectedCategory} onChange={setSelectedCategory} />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Subcategoria / Gênero</label>
-                <input type="text" className={styles.formInput} placeholder="Ex: Rock, Stand-up Comedy, Pop, IMAX, Gastronomia" required />
-              </div>
-
-
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Local / Casa de Show</label>
-                <input type="text" className={styles.formInput} placeholder="Ex: Allianz Parque" required />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Cidade / Estado</label>
-                <input type="text" className={styles.formInput} placeholder="Ex: São Paulo — SP" required />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Data e Horário</label>
-                <input type="text" className={styles.formInput} placeholder="Ex: 25 DEZ 2026 • 22:00" required />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Capacidade Total de Ingressos</label>
-                <input type="number" className={styles.formInput} placeholder="Ex: 1000" defaultValue={500} required />
-              </div>
-
-              <button type="submit" className={styles.btnSubmitForm}>
-                Publicar Evento
-              </button>
-            </form>
-          </div>
-        )}
 
         {activeTab === "config" && (
           <div className={styles.formCard}>
@@ -796,27 +663,52 @@ export default function DashboardPage() {
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Nome da Empresa / Produtora</label>
-                <input type="text" className={styles.formInput} defaultValue="Elite Events & Entertainment" />
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={orgForm.companyName}
+                  onChange={(e) => setOrgForm({ ...orgForm, companyName: e.target.value })}
+                  placeholder="Ex: Elite Events & Entertainment"
+                />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>CNPJ / Registro</label>
-                <input type="text" className={styles.formInput} defaultValue="12.345.678/0001-90" />
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={orgForm.companyCnpj}
+                  onChange={(e) => setOrgForm({ ...orgForm, companyCnpj: e.target.value })}
+                  placeholder="00.000.000/0001-00"
+                />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>E-mail Comercial</label>
-                <input type="email" className={styles.formInput} defaultValue="contato@eliteevents.com" />
+                <input
+                  type="email"
+                  className={styles.formInput}
+                  value={orgForm.companyEmail}
+                  onChange={(e) => setOrgForm({ ...orgForm, companyEmail: e.target.value })}
+                  placeholder="contato@suaempresa.com"
+                />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Telefone de Suporte</label>
-                <input type="text" className={styles.formInput} defaultValue="(11) 98765-4321" />
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={orgForm.companyPhone}
+                  onChange={(e) => setOrgForm({ ...orgForm, companyPhone: e.target.value })}
+                  placeholder="(11) 98765-4321"
+                />
               </div>
             </div>
             <button
               type="button"
               className={styles.btnSubmitForm}
-              onClick={() => alert("Configurações salvas!")}
+              onClick={handleSaveOrganization}
+              disabled={orgSaving}
             >
-              Salvar Alterações
+              {orgSaving ? "Salvando..." : "Salvar Alterações"}
             </button>
           </div>
         )}
@@ -959,49 +851,36 @@ export default function DashboardPage() {
                   Setores Disponíveis para Compra
                 </h4>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <div
-                    style={{
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      borderRadius: "10px",
-                      padding: "12px 16px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div>
-                      <span style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#ffffff" }}>
-                        Pista Premium
-                      </span>
-                      <span style={{ fontSize: "12px", color: "#71717a" }}>Acesso exclusivo próximo ao palco</span>
-                    </div>
-                    <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--color-primary)" }}>
-                      R$ 190,00
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      borderRadius: "10px",
-                      padding: "12px 16px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div>
-                      <span style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#ffffff" }}>
-                        Camarote VIP
-                      </span>
-                      <span style={{ fontSize: "12px", color: "#71717a" }}>Área coberta com open bar</span>
-                    </div>
-                    <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--color-primary)" }}>
-                      R$ 350,00
-                    </span>
-                  </div>
+                  {previewTiersLoading ? (
+                    <span style={{ fontSize: "13px", color: "#71717a" }}>Carregando setores...</span>
+                  ) : previewTiers && previewTiers.length > 0 ? (
+                    previewTiers.map((tier) => (
+                      <div
+                        key={tier.id}
+                        style={{
+                          background: "rgba(255,255,255,0.02)",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          borderRadius: "10px",
+                          padding: "12px 16px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <div>
+                          <span style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#ffffff" }}>
+                            {tier.label}
+                          </span>
+                          <span style={{ fontSize: "12px", color: "#71717a" }}>{tier.capacity} ingressos disponíveis</span>
+                        </div>
+                        <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--color-primary)" }}>
+                          {formatCurrency(tier.priceUnit)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <span style={{ fontSize: "13px", color: "#71717a" }}>Nenhum setor cadastrado.</span>
+                  )}
                 </div>
               </div>
 
@@ -1018,6 +897,17 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* ── CREATE EVENT MODAL (persiste no banco via API) ── */}
+      <EventFormModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onSaved={() => {
+          fetchDashboardData();
+          setActiveTab("eventos");
+        }}
+        event={null}
+      />
 
       {/* ── EDIT EVENT MODAL (persiste no banco via API) ── */}
       <EventFormModal

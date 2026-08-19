@@ -271,6 +271,12 @@ const EVENT_STATUS_LABEL: Record<string, "ATIVO" | "PAUSADO" | "AGUARDANDO" | "C
   COMPLETED: "ATIVO",
 };
 
+/** Calcula a variação percentual entre o período atual e o anterior (uma casa decimal). */
+function trendPercent(current: number, previous: number): number {
+  if (previous === 0) return current === 0 ? 0 : 100;
+  return Math.round(((current - previous) / previous) * 1000) / 10;
+}
+
 /** GET /events/organizer/dashboard — Relatórios do organizador logado (ORGANIZER) */
 export async function getOrganizerDashboard(req: Request, res: Response): Promise<void> {
   const { userId } = (req as AuthenticatedRequest).user;
@@ -294,6 +300,28 @@ export async function getOrganizerDashboard(req: Request, res: Response): Promis
     const totalSales = allOrders.reduce((sum, o) => sum + o.totalAmount, 0);
     const ticketsSold = allOrders.reduce((sum, o) => sum + o.quantity, 0);
     const activeEventsCount = events.filter((e) => e.status === "PUBLISHED").length;
+    const avgTicketPrice = ticketsSold > 0 ? totalSales / ticketsSold : 0;
+
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const ordersThisMonth = allOrders.filter((o) => o.createdAt >= startOfThisMonth);
+    const ordersLastMonth = allOrders.filter((o) => o.createdAt >= startOfLastMonth && o.createdAt < startOfThisMonth);
+
+    const salesThisMonth = ordersThisMonth.reduce((sum, o) => sum + o.totalAmount, 0);
+    const salesLastMonth = ordersLastMonth.reduce((sum, o) => sum + o.totalAmount, 0);
+    const ticketsThisMonth = ordersThisMonth.reduce((sum, o) => sum + o.quantity, 0);
+    const ticketsLastMonth = ordersLastMonth.reduce((sum, o) => sum + o.quantity, 0);
+
+    const eventsCreatedThisMonth = events.filter((e) => e.createdAt >= startOfThisMonth).length;
+    const eventsCreatedLastMonth = events.filter(
+      (e) => e.createdAt >= startOfLastMonth && e.createdAt < startOfThisMonth
+    ).length;
+
+    const salesTrendPct = trendPercent(salesThisMonth, salesLastMonth);
+    const ticketsTrendPct = trendPercent(ticketsThisMonth, ticketsLastMonth);
+    const eventsTrendDelta = eventsCreatedThisMonth - eventsCreatedLastMonth;
 
     const formattedEvents = events.map((e) => {
       const revenue = e.orders.reduce((sum, o) => sum + o.totalAmount, 0);
@@ -323,7 +351,10 @@ export async function getOrganizerDashboard(req: Request, res: Response): Promis
       totalSales,
       ticketsSold,
       activeEventsCount,
-      conversionRate: 3.8,
+      avgTicketPrice,
+      salesTrendPct,
+      ticketsTrendPct,
+      eventsTrendDelta,
       events: formattedEvents,
       recentActivities,
     });
