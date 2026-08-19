@@ -6,8 +6,10 @@ import Link from "next/link";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
 import { Stepper } from "@/components/Stepper";
+import { SeatMap } from "@/components/SeatMap";
 import { useAuth } from "@/lib/auth-context";
-import type { CreateOrderPayload, CreateOrderResponse } from "@/app/api/orders/route";
+import { useSeatMap } from "@/lib/useSeatMap";
+import type { CreateOrderPayload, CreateOrderResponse, ConfirmOrderResponse } from "@/app/api/orders/route";
 import {
   ClockIcon,
   CalendarIcon,
@@ -134,15 +136,26 @@ export default function MoviePage() {
 
   const [tiers, setTiers]             = useState<TicketTier[]>([]);
   const [selectedTier, setSelectedTier] = useState<TicketTier | null>(null);
-  const [qty, setQty]                 = useState(1);
   const [step, setStep]               = useState(1);
   const [orderCode, setOrderCode]     = useState("");
   const [ticketCode, setTicketCode]   = useState("");
+  const [purchasedSeats, setPurchasedSeats] = useState<string[]>([]);
 
   const [form, setForm] = useState({ name: "", email: "", cpf: "", card: "", expiry: "", cvv: "" });
   const [formErrors, setFormErrors] = useState<Partial<typeof form>>({});
   const [processing, setProcessing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
+
+  const eventId = movie ? `tmdb-${movie.id}` : "";
+  const {
+    seats: seatMap,
+    selected: selectedSeats,
+    loading: seatsLoading,
+    loadError: seatsLoadError,
+    actionError: seatsActionError,
+    toggleSeat,
+  } = useSeatMap(eventId, user?.id ?? null, accessToken);
+  const qty = selectedSeats.length;
 
   const fetchMovie = useCallback(async () => {
     setLoading(true);
@@ -196,12 +209,16 @@ export default function MoviePage() {
       setPurchaseError("Você precisa estar logado para finalizar a compra. Faça login pelo menu superior.");
       return;
     }
+    if (selectedSeats.length === 0) {
+      setPurchaseError("Selecione ao menos um assento para continuar.");
+      return;
+    }
 
     setPurchaseError(null);
     setProcessing(true);
     try {
       const payload: CreateOrderPayload = {
-        eventId: `tmdb-${movie!.id}`,
+        eventId,
         eventType: "MOVIE",
         eventName: movie!.title,
         eventDate: movie!.release_date,
@@ -210,6 +227,7 @@ export default function MoviePage() {
         tierLabel: selectedTier!.label,
         priceUnit: selectedTier!.price,
         quantity: qty,
+        seatLabels: selectedSeats,
       };
 
       const res = await fetch("/api/orders", {
@@ -220,8 +238,16 @@ export default function MoviePage() {
       const data: CreateOrderResponse & { error?: string } = await res.json();
       if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Não foi possível concluir a compra.");
 
-      setOrderCode(data.order.id);
-      setTicketCode(data.order.tickets[0]?.code ?? "");
+      const confirmRes = await fetch(`/api/orders/${data.order.id}/confirm`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const confirmData: ConfirmOrderResponse & { error?: string } = await confirmRes.json();
+      if (!confirmRes.ok) throw new Error(typeof confirmData.error === "string" ? confirmData.error : "Não foi possível confirmar o pagamento.");
+
+      setOrderCode(confirmData.order.id);
+      setTicketCode(confirmData.order.tickets[0]?.code ?? "");
+      setPurchasedSeats(selectedSeats);
       setStep(3);
     } catch (err) {
       setPurchaseError(err instanceof Error ? err.message : "Não foi possível concluir a compra.");
@@ -326,13 +352,16 @@ export default function MoviePage() {
                 ))}
               </div>
 
-              <div className={styles.qtyRow}>
-                <span className={styles.qtyLabel}>Quantidade</span>
-                <div className={styles.qtyControl}>
-                  <button className={styles.qtyBtn} id="btn-qty-minus" onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
-                  <span className={styles.qtyValue}>{qty}</span>
-                  <button className={styles.qtyBtn} id="btn-qty-plus" onClick={() => setQty(q => Math.min(10, q + 1))}>+</button>
-                </div>
+              <h2 className={styles.sectionTitle} style={{ marginTop: 8 }}>Escolha seus assentos</h2>
+              <div className={styles.seatMapWrap}>
+                <SeatMap
+                  seats={seatMap}
+                  selected={selectedSeats}
+                  onToggle={toggleSeat}
+                  loading={seatsLoading}
+                  loadError={seatsLoadError}
+                  actionError={seatsActionError}
+                />
               </div>
             </section>
 
@@ -350,6 +379,11 @@ export default function MoviePage() {
               <div className={styles.summaryNote}>
                 <AlertTriangleIcon size={12} /> Preços simulados para fins de demonstração.
               </div>
+              {selectedSeats.length > 0 && (
+                <p className={styles.summaryMeta} style={{ marginTop: -8, marginBottom: 4 }}>
+                  Assentos: {[...selectedSeats].sort().join(", ")}
+                </p>
+              )}
               <div className={styles.summaryLines}>
                 <div className={styles.summaryLine}>
                   <span>{selectedTier?.label} × {qty}</span>
@@ -367,10 +401,10 @@ export default function MoviePage() {
               <button
                 className={styles.btnContinue}
                 id="btn-continuar"
-                disabled={!selectedTier}
+                disabled={!selectedTier || selectedSeats.length === 0}
                 onClick={() => setStep(2)}
               >
-                Continuar para Pagamento →
+                {selectedSeats.length === 0 ? "Selecione ao menos 1 assento" : "Continuar para Pagamento →"}
               </button>
             </aside>
           </div>
@@ -436,6 +470,7 @@ export default function MoviePage() {
                 <div>
                   <p className={styles.summaryName}>{movie.title}</p>
                   <p className={styles.summaryMeta}>{selectedTier?.label} × {qty}</p>
+                  <p className={styles.summaryMeta}>Assentos: {[...selectedSeats].sort().join(", ")}</p>
                 </div>
               </div>
               <div className={styles.summaryLines}>
@@ -495,7 +530,11 @@ export default function MoviePage() {
                 </div>
                 <div className={styles.tcField}>
                   <span className={styles.tcLabel}>Quantidade</span>
-                  <span className={styles.tcValue}>{qty}x</span>
+                  <span className={styles.tcValue}>{purchasedSeats.length}x</span>
+                </div>
+                <div className={styles.tcField}>
+                  <span className={styles.tcLabel}>Assentos</span>
+                  <span className={styles.tcValue}>{[...purchasedSeats].sort().join(", ")}</span>
                 </div>
               </div>
 

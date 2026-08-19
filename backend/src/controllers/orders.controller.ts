@@ -6,6 +6,8 @@ import { generateTicketCode, generateQrData } from "../lib/ticketCode";
 import { tiersArraySchema } from "../lib/eventTiers";
 import { AuthenticatedRequest } from "../middlewares/requireAuth";
 import type { Prisma } from "../generated/client/client";
+import { ORDER_HOLD_EXTENSION_MS } from "../lib/seatLayout";
+import { broadcastSeatUpdate } from "../lib/socket";
 
 const createOrderSchema = z.object({
   eventId:    z.string().min(1),
@@ -17,6 +19,7 @@ const createOrderSchema = z.object({
   tierLabel:  z.string().min(1),
   priceUnit:  z.number().positive(),
   quantity:   z.number().int().min(1).max(10),
+  seatLabels: z.array(z.string().min(1)).max(10).optional(),
 });
 
 export async function createOrder(req: Request, res: Response): Promise<void> {
@@ -28,11 +31,37 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const { eventId, eventType, eventName, eventDate, eventVenue, tierId, quantity } = parse.data;
+  const { eventId, eventType, eventName, eventDate, eventVenue, tierId, quantity, seatLabels } = parse.data;
 
   let { tierLabel, priceUnit } = parse.data;
 
   try {
+    if (seatLabels && seatLabels.length > 0) {
+      if (seatLabels.length !== quantity) {
+        res.status(400).json({ error: "A quantidade de assentos deve ser igual à quantidade de ingressos." });
+        return;
+      }
+      if (new Set(seatLabels).size !== seatLabels.length) {
+        res.status(400).json({ error: "Assentos duplicados na seleção." });
+        return;
+      }
+
+      const seatRows = await prisma.seat.findMany({ where: { eventId, label: { in: seatLabels } } });
+      const now = new Date();
+      for (const label of seatLabels) {
+        const row = seatRows.find((s) => s.label === label);
+        if (!row || row.status !== "HELD" || row.heldByUserId !== userId || !row.holdExpiresAt || row.holdExpiresAt < now) {
+          res.status(409).json({ error: `O assento ${label} não está mais reservado para você. Selecione novamente.` });
+          return;
+        }
+      }
+
+      await prisma.seat.updateMany({
+        where: { eventId, label: { in: seatLabels }, heldByUserId: userId },
+        data: { holdExpiresAt: new Date(Date.now() + ORDER_HOLD_EXTENSION_MS) },
+      });
+    }
+
     const localEvent = await prisma.event.findUnique({ where: { id: eventId } });
     if (localEvent) {
       if (localEvent.status !== "PUBLISHED") {
@@ -65,6 +94,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
         eventId, localEventId: localEvent ? eventId : null,
         eventType, eventName, eventDate, eventVenue,
         tierId, tierLabel, priceUnit, quantity, fee, totalAmount,
+        seatLabels: seatLabels && seatLabels.length > 0 ? seatLabels : undefined,
         status: "PENDING",
       },
     });
@@ -76,9 +106,17 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       metadata:            { orderId: order.id, userId },
     });
 
+    // O checkout de filmes usa um formulário de pagamento simulado (sem Stripe Elements no
+    // cliente), então confirmamos aqui mesmo, em modo de teste, com o cartão de teste padrão
+    // da Stripe — isso permite que /orders/:id/confirm emita os ingressos normalmente.
+    const confirmedIntent =
+      eventType === "MOVIE"
+        ? await stripe.paymentIntents.confirm(paymentIntent.id, { payment_method: "pm_card_visa" })
+        : paymentIntent;
+
     await prisma.order.update({
       where: { id: order.id },
-      data:  { paymentIntentId: paymentIntent.id },
+      data:  { paymentIntentId: confirmedIntent.id },
     });
 
     res.status(201).json({
@@ -128,6 +166,8 @@ export async function confirmOrderPayment(req: Request, res: Response): Promise<
     return;
   }
 
+  const seatLabels = Array.isArray(order.seatLabels) ? (order.seatLabels as string[]) : [];
+
   try {
     const confirmedOrder = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (order.localEventId) {
@@ -141,20 +181,47 @@ export async function confirmOrderPayment(req: Request, res: Response): Promise<
         });
       }
 
-      const ticketData = Array.from({ length: order.quantity }, () => {
+      if (seatLabels.length > 0) {
+        const seatRows = await tx.seat.findMany({ where: { eventId: order.eventId, label: { in: seatLabels } } });
+        const now = new Date();
+        for (const label of seatLabels) {
+          const row = seatRows.find((s) => s.label === label);
+          if (!row || row.status === "SOLD" || row.heldByUserId !== order.userId || !row.holdExpiresAt || row.holdExpiresAt < now) {
+            throw new Error("SEAT_UNAVAILABLE");
+          }
+        }
+      }
+
+      const ticketData = Array.from({ length: order.quantity }, (_, i) => {
         const code   = generateTicketCode(order.eventName, order.tierLabel);
         const qrData = generateQrData(code);
-        return { orderId: order.id, code, qrData };
+        return { orderId: order.id, code, qrData, seatLabel: seatLabels[i] ?? null };
       });
       await tx.ticket.createMany({ data: ticketData });
+
+      if (seatLabels.length > 0) {
+        await tx.seat.updateMany({
+          where: { eventId: order.eventId, label: { in: seatLabels } },
+          data: { status: "SOLD", heldByUserId: null, holdExpiresAt: null, orderId: order.id },
+        });
+      }
 
       await tx.order.update({ where: { id: order.id }, data: { status: "CONFIRMED" } });
 
       return tx.order.findUnique({ where: { id: order.id }, include: { tickets: true } });
     });
 
+    for (const label of seatLabels) {
+      broadcastSeatUpdate(order.eventId, { label, status: "SOLD" });
+    }
+
     res.json({ order: confirmedOrder });
   } catch (err) {
+    if (err instanceof Error && err.message === "SEAT_UNAVAILABLE") {
+      await prisma.order.update({ where: { id: order.id }, data: { status: "FAILED" } });
+      res.status(409).json({ error: "Um ou mais assentos escolhidos não estão mais disponíveis. Entre em contato com o suporte para reembolso." });
+      return;
+    }
     if (err instanceof Error && err.message === "CAPACITY_EXCEEDED") {
       await prisma.order.update({ where: { id: order.id }, data: { status: "FAILED" } });
       res.status(409).json({ error: "Ingressos esgotados durante o pagamento. Entre em contato com o suporte para reembolso." });

@@ -278,35 +278,13 @@
 .tierDesc  { font-size: 13px; color: var(--color-text-muted); }
 .tierPrice { font-size: 22px; font-weight: 800; color: var(--color-primary); letter-spacing: -0.5px; flex-shrink: 0; }
 
-/* ── QTY ROW ── */
-.qtyRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* ── SEAT MAP ── */
+.seatMapWrap {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 16px 24px;
+  padding: 20px;
 }
-.qtyLabel { font-size: 14px; color: var(--color-text-muted); }
-.qtyControl { display: flex; align-items: center; gap: 12px; }
-.qtyBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-size: 18px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition), border-color var(--transition);
-}
-.qtyBtn:hover { background: var(--color-primary); color: #000; border-color: var(--color-primary); }
-.qtyValue { font-size: 18px; font-weight: 800; color: var(--color-text); min-width: 28px; text-align: center; }
 
 /* ── SUMMARY BOX ── */
 .summaryBox {

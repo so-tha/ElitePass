@@ -1,5 +1,6 @@
 import { env } from "./config/env";
 
+import { createServer } from "http";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -12,7 +13,12 @@ import ordersRoutes from "./routes/orders.routes";
 import ticketsRoutes from "./routes/tickets.routes";
 import catalogRoutes from "./routes/catalog.routes";
 import accountRoutes from "./routes/account.routes";
+import seatsRoutes from "./routes/seats.routes";
 import { errorHandler } from "./middlewares/errorHandler";
+import { initSocket, broadcastSeatUpdate } from "./lib/socket";
+import { releaseExpiredHolds } from "./controllers/seats.controller";
+
+const SEAT_HOLD_SWEEP_INTERVAL_MS = 30_000;
 
 const app = express();
 
@@ -36,6 +42,7 @@ app.use("/api/orders", ordersRoutes);
 app.use("/api/tickets", ticketsRoutes);
 app.use("/api/catalog", catalogRoutes);
 app.use("/api/account", accountRoutes);
+app.use("/api/seats", seatsRoutes);
 
 app.get("/", (_req, res) => {
   res.json({ message: "ElitePass API is running!" });
@@ -51,7 +58,17 @@ app.use((_req, res) => {
 
 app.use(errorHandler);
 
-app.listen(env.PORT, () => {
+const httpServer = createServer(app);
+initSocket(httpServer, env.FRONTEND_URL ?? "http://localhost:3000");
+
+setInterval(async () => {
+  const released = await releaseExpiredHolds();
+  for (const { eventId, label } of released) {
+    broadcastSeatUpdate(eventId, { label, status: "AVAILABLE" });
+  }
+}, SEAT_HOLD_SWEEP_INTERVAL_MS);
+
+httpServer.listen(env.PORT, () => {
   console.log(`🚀 Server running on http://localhost:${env.PORT}`);
 });
 

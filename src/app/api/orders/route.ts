@@ -10,6 +10,7 @@ export interface CreateOrderPayload {
   tierLabel: string;
   priceUnit: number;
   quantity: number;
+  seatLabels?: string[];
 }
 
 export interface CreateOrderResponse {
@@ -20,7 +21,7 @@ export interface CreateOrderResponse {
     quantity: number;
     totalAmount: number;
     createdAt: string;
-    tickets: { id: string; code: string; qrData: string }[];
+    tickets: { id: string; code: string; qrData: string; seatLabel?: string | null }[];
   };
   clientSecret: string;
 }

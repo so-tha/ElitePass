@@ -55,7 +55,6 @@ async function main() {
         role: "DOORMAN",
       },
     });
-    console.log(`🚪 Criado novo usuário de portaria: ${doorman.email}`);
   }
 
   // 3. Criar os 5 Eventos (3 Shows e 2 Cinema)

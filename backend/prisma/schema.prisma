@@ -49,6 +49,11 @@ enum TicketStatus {
   CANCELLED
 }
 
+enum SeatStatus {
+  HELD
+  SOLD
+}
+
 // ─── Models ──────────────────────────────────────────────────
 
 model User {
@@ -131,6 +136,9 @@ model Order {
   fee         Float       // taxa de serviço cobrada (12%)
   totalAmount Float
 
+  // Assentos escolhidos (para eventos com mapa de assentos, ex.: filmes) — array de labels ("A1", "A2", ...)
+  seatLabels  Json?
+
   status          OrderStatus @default(PENDING)
   paymentIntentId String?     @unique
   createdAt       DateTime    @default(now())
@@ -151,9 +159,32 @@ model Ticket {
   status      TicketStatus @default(VALID)
   usedAt      DateTime?    // preenchido pela portaria ao validar
 
+  seatLabel   String?      // assento vinculado, quando o evento usa mapa de assentos (ex.: "A1")
+
   createdAt   DateTime     @default(now())
 
   @@index([code])
   @@index([shareToken])
+}
+
+// Assento de um mapa de sala (hoje usado nas sessões de filme). Só existe uma linha aqui quando
+// o assento está reservado temporariamente (HELD) ou já vendido (SOLD) — assentos livres não têm
+// linha na tabela, o layout completo é derivado de `seatLayout.ts` e mesclado com estas linhas.
+model Seat {
+  id            String     @id @default(uuid())
+  eventId       String     // mesmo formato usado em Order.eventId (ex.: "tmdb-603")
+  label         String     // ex.: "A1"
+  status        SeatStatus
+
+  heldByUserId  String?    // preenchido enquanto status = HELD
+  holdExpiresAt DateTime?  // preenchido enquanto status = HELD
+
+  orderId       String?    // preenchido quando status = SOLD, para rastreabilidade
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([eventId, label])
+  @@index([eventId])
 }
 
