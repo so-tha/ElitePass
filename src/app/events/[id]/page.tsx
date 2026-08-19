@@ -16,6 +16,7 @@ import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
 import { Stepper } from "@/components/Stepper";
 import { useAuth } from "@/lib/auth-context";
+import { shareLink, buildTicketShareUrl } from "@/lib/share";
 import type { CreateOrderPayload, CreateOrderResponse, ConfirmOrderResponse } from "@/app/api/orders/route";
 import {
   CalendarIcon,
@@ -212,6 +213,8 @@ function EventCheckout() {
   const [mockPrices, setMockPrices] = useState(false);
   const [orderCode,  setOrderCode]  = useState("");
   const [ticketCode, setTicketCode] = useState("");
+  const [shareToken, setShareToken] = useState("");
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   const [form, setForm] = useState({ name: "", email: "", cpf: "" });
   const [formErrors, setFormErrors] = useState<Partial<typeof form>>({});
@@ -355,12 +358,23 @@ function EventCheckout() {
 
       setOrderCode(confirmData.order.id);
       setTicketCode(confirmData.order.tickets[0]?.code ?? "");
+      setShareToken(confirmData.order.tickets[0]?.shareToken ?? "");
       setPendingOrder(null);
       setStep(3);
     } catch (err) {
       setPurchaseError(err instanceof Error ? err.message : "Não foi possível concluir a compra.");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!shareToken) return;
+    const url = buildTicketShareUrl(shareToken);
+    const { message } = await shareLink(url, "Meu ingresso — ElitePass", `Confira meu ingresso para ${event?.name ?? "o evento"}`);
+    if (message) {
+      setShareMessage(message);
+      setTimeout(() => setShareMessage(null), 3000);
     }
   };
 
@@ -785,10 +799,11 @@ function EventCheckout() {
             </div>
 
             <div className={styles.confirmActions}>
-              <button id="btn-compartilhar" className={styles.btnContinue}>
+              <button id="btn-compartilhar" className={styles.btnContinue} onClick={handleShare} disabled={!shareToken}>
                 <ShareIcon size={14} /> Compartilhar Ingresso
               </button>
             </div>
+            {shareMessage && <p className={styles.shareMessage}>{shareMessage}</p>}
 
             <div className={styles.infoBoxes}>
               <div className={styles.infoBox}>

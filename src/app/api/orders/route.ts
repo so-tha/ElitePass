@@ -21,7 +21,7 @@ export interface CreateOrderResponse {
     quantity: number;
     totalAmount: number;
     createdAt: string;
-    tickets: { id: string; code: string; qrData: string; seatLabel?: string | null }[];
+    tickets: { id: string; code: string; qrData: string; shareToken: string; seatLabel?: string | null }[];
   };
   clientSecret: string;
 }
