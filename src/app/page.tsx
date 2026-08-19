@@ -15,6 +15,7 @@ import {
   AlertTriangleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDownIcon,
 } from "@/components/icons";
 import {
   TMEvent,
@@ -47,12 +48,48 @@ function CardSkeleton() {
   );
 }
 
+const TYPE_OPTIONS = [
+  { label: "Todos os Tipos", desc: "Show, Teatro, Comédia, Timcorna, etc." },
+  { label: "Shows & Festivais", desc: "Música ao vivo, festivais, pop, sertanejo" },
+  { label: "Teatro & Dança", desc: "Peças, comédias dramáticas, balé" },
+  { label: "Comédia & Stand-up", desc: "Humor, stand-up, improviso" },
+  { label: "Cinema & Mostras", desc: "Salas IMAX, 3D, lançamentos" },
+];
+
+const DATE_OPTIONS = [
+  { label: "Todas as Datas", desc: "Hoje, Este Fim de Semana, Próximos 30 Dias, Etc." },
+  { label: "Hoje", desc: "Eventos hoje" },
+  { label: "Este Fim de Semana", desc: "Sábado e Domingo" },
+  { label: "Próximos 30 Dias", desc: "Próximas 4 semanas" },
+];
+
+const LOCATION_OPTIONS = [
+  { label: "Todos os Locais", desc: "São Paulo, Rio de Janeiro, etc." },
+  { label: "São Paulo — SP", desc: "Allianz Parque, Tokio Marine, Vibra" },
+  { label: "Rio de Janeiro — RJ", desc: "Jeunesse Arena, Circo Voador" },
+  { label: "Belo Horizonte — MG", desc: "Mineirão, Beira-Rio" },
+];
+
+const SORT_OPTIONS = [
+  { label: "Mais Recente • Menor Preço", desc: "Novidades ou menor preço primeiro" },
+  { label: "Mais Recente", desc: "Recém-adicionados" },
+  { label: "Menor Preço", desc: "Preços mais em conta" },
+  { label: "Maior Preço", desc: "Setores VIP" },
+];
+
 export default function Home() {
   const router = useRouter();
   const [events, setEvents] = useState<TMEvent[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [selectedType, setSelectedType] = useState("Todos os Tipos");
+  const [selectedDate, setSelectedDate] = useState("Todas as Datas");
+  const [selectedLocation, setSelectedLocation] = useState("Todos os Locais");
+  const [selectedSort, setSelectedSort] = useState("Mais Recente • Menor Preço");
+
+  const [openDropdown, setOpenDropdown] = useState<"type" | "date" | "location" | "sort" | null>(null);
 
   const sliderRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -381,6 +418,160 @@ function getCategoryBadge(categoryStr: string) {
                 <XIcon size={12} />
               </button>
             )}
+          </div>
+
+          <div className={styles.filterBar}>
+            {/* Filter 1: Tipos */}
+            <div className={styles.filterBoxContainer}>
+              <button
+                type="button"
+                className={`${styles.filterBox} ${openDropdown === "type" ? styles.filterBoxActive : ""}`}
+                onClick={() => setOpenDropdown(openDropdown === "type" ? null : "type")}
+              >
+                <div className={styles.filterBoxTextGroup}>
+                  <span className={styles.filterBoxTitle}>{selectedType}</span>
+                  <span className={styles.filterBoxDesc}>
+                    {TYPE_OPTIONS.find((t) => t.label === selectedType)?.desc ?? "Show, Teatro, Comédia, Timcorna, etc."}
+                  </span>
+                </div>
+                <ChevronDownIcon size={16} className={styles.filterChevron} />
+              </button>
+
+              {openDropdown === "type" && (
+                <>
+                  <div className={styles.dropdownBackdrop} onClick={() => setOpenDropdown(null)} />
+                  <div className={styles.dropdownMenu}>
+                    {TYPE_OPTIONS.map((opt) => (
+                      <div
+                        key={opt.label}
+                        className={`${styles.dropdownItem} ${selectedType === opt.label ? styles.dropdownItemActive : ""}`}
+                        onClick={() => {
+                          setSelectedType(opt.label);
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <span className={styles.dropdownItemLabel}>{opt.label}</span>
+                        <span className={styles.dropdownItemDesc}>{opt.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Filter 2: Datas */}
+            <div className={styles.filterBoxContainer}>
+              <button
+                type="button"
+                className={`${styles.filterBox} ${openDropdown === "date" ? styles.filterBoxActive : ""}`}
+                onClick={() => setOpenDropdown(openDropdown === "date" ? null : "date")}
+              >
+                <div className={styles.filterBoxTextGroup}>
+                  <span className={styles.filterBoxTitle}>{selectedDate}</span>
+                  <span className={styles.filterBoxDesc}>
+                    {DATE_OPTIONS.find((d) => d.label === selectedDate)?.desc ?? "Hoje, Este Fim de Semana, Próximos 30 Dias, Etc."}
+                  </span>
+                </div>
+                <ChevronDownIcon size={16} className={styles.filterChevron} />
+              </button>
+
+              {openDropdown === "date" && (
+                <>
+                  <div className={styles.dropdownBackdrop} onClick={() => setOpenDropdown(null)} />
+                  <div className={styles.dropdownMenu}>
+                    {DATE_OPTIONS.map((opt) => (
+                      <div
+                        key={opt.label}
+                        className={`${styles.dropdownItem} ${selectedDate === opt.label ? styles.dropdownItemActive : ""}`}
+                        onClick={() => {
+                          setSelectedDate(opt.label);
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <span className={styles.dropdownItemLabel}>{opt.label}</span>
+                        <span className={styles.dropdownItemDesc}>{opt.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Filter 3: Locais */}
+            <div className={styles.filterBoxContainer}>
+              <button
+                type="button"
+                className={`${styles.filterBox} ${openDropdown === "location" ? styles.filterBoxActive : ""}`}
+                onClick={() => setOpenDropdown(openDropdown === "location" ? null : "location")}
+              >
+                <div className={styles.filterBoxTextGroup}>
+                  <span className={styles.filterBoxTitle}>{selectedLocation}</span>
+                  <span className={styles.filterBoxDesc}>
+                    {LOCATION_OPTIONS.find((l) => l.label === selectedLocation)?.desc ?? "São Paulo, Rio de Janeiro, etc."}
+                  </span>
+                </div>
+                <ChevronDownIcon size={16} className={styles.filterChevron} />
+              </button>
+
+              {openDropdown === "location" && (
+                <>
+                  <div className={styles.dropdownBackdrop} onClick={() => setOpenDropdown(null)} />
+                  <div className={styles.dropdownMenu}>
+                    {LOCATION_OPTIONS.map((opt) => (
+                      <div
+                        key={opt.label}
+                        className={`${styles.dropdownItem} ${selectedLocation === opt.label ? styles.dropdownItemActive : ""}`}
+                        onClick={() => {
+                          setSelectedLocation(opt.label);
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <span className={styles.dropdownItemLabel}>{opt.label}</span>
+                        <span className={styles.dropdownItemDesc}>{opt.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Filter 4: Ordenação */}
+            <div className={styles.filterBoxContainer}>
+              <button
+                type="button"
+                className={`${styles.filterBox} ${openDropdown === "sort" ? styles.filterBoxActive : ""}`}
+                onClick={() => setOpenDropdown(openDropdown === "sort" ? null : "sort")}
+              >
+                <div className={styles.filterBoxTextGroup}>
+                  <span className={styles.filterBoxTitle}>{selectedSort}</span>
+                  <span className={styles.filterBoxDesc}>
+                    {SORT_OPTIONS.find((s) => s.label === selectedSort)?.desc ?? "Mais Recente • Menor Preço"}
+                  </span>
+                </div>
+                <ChevronDownIcon size={16} className={styles.filterChevron} />
+              </button>
+
+              {openDropdown === "sort" && (
+                <>
+                  <div className={styles.dropdownBackdrop} onClick={() => setOpenDropdown(null)} />
+                  <div className={styles.dropdownMenu}>
+                    {SORT_OPTIONS.map((opt) => (
+                      <div
+                        key={opt.label}
+                        className={`${styles.dropdownItem} ${selectedSort === opt.label ? styles.dropdownItemActive : ""}`}
+                        onClick={() => {
+                          setSelectedSort(opt.label);
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <span className={styles.dropdownItemLabel}>{opt.label}</span>
+                        <span className={styles.dropdownItemDesc}>{opt.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </section>
 
