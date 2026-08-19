@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { EventFormModal, type EditableEvent } from "@/components/EventFormModal";
 import {
   TicketIcon,
   PlusIcon,
@@ -150,7 +151,15 @@ function CustomCategorySelect({
 export default function DashboardPage() {
   const { user, accessToken, loading: authLoading, logout } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "eventos" | "novo" | "config">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "eventos" | "novo" | "config">(() => {
+    if (typeof window === "undefined") return "dashboard";
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam === "novo" || tabParam === "eventos" || tabParam === "dashboard" || tabParam === "config") {
+      return tabParam as "dashboard" | "eventos" | "novo" | "config";
+    }
+    return "dashboard";
+  });
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -162,7 +171,8 @@ export default function DashboardPage() {
   };
 
 
-  const [editingEvent, setEditingEvent] = useState<DashboardEventItem | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EditableEvent | null>(null);
+  const [editLoadingId, setEditLoadingId] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<DashboardEventItem | null>(null);
   const [pendingEventId, setPendingEventId] = useState<string | null>(null);
 
@@ -176,38 +186,31 @@ export default function DashboardPage() {
     capacity: 500,
   });
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get("tab");
-      if (tabParam === "novo" || tabParam === "eventos" || tabParam === "dashboard" || tabParam === "config") {
-        setActiveTab(tabParam);
+  // activeTab is initialized from URL params to avoid synchronous setState inside an effect
+
+  const fetchDashboardData = async () => {
+    if (!accessToken) return;
+    try {
+      setLoading(true);
+      const res = await fetch("/api/organizer/dashboard", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
       }
+    } catch (err) {
+      console.error("Erro ao carregar dados do dashboard:", err);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     if (authLoading) return;
     if (!accessToken) {
-      setLoading(false);
+      queueMicrotask(() => setLoading(false));
       return;
-    }
-
-    async function fetchDashboardData() {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/organizer/dashboard", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          setData(json);
-        }
-      } catch (err) {
-        console.error("Erro ao carregar dados do dashboard:", err);
-      } finally {
-        setLoading(false);
-      }
     }
     fetchDashboardData();
   }, [authLoading, accessToken]);
@@ -231,40 +234,42 @@ export default function DashboardPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleOpenEdit = (evt: DashboardEventItem) => {
-    setEditingEvent(evt);
-    setUploadedImage(evt.imageUrl || null);
-    setEventForm({
-      title: evt.title,
-      venue: evt.venue,
-      city: evt.city,
-      date: evt.date,
-      capacity: evt.capacity,
-    });
+  const handleOpenEdit = async (evt: DashboardEventItem) => {
+    if (!accessToken) return;
+    setEditLoadingId(evt.id);
+    try {
+      const res = await fetch(`/api/organizer/events/${evt.id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const json = await res.json();
+      if (!res.ok || !json.event) {
+        alert("Não foi possível carregar os dados do evento. Tente novamente.");
+        return;
+      }
+      const event = json.event;
+      setEditingEvent({
+        id: event.id,
+        title: event.title,
+        description: event.description ?? null,
+        category: event.category,
+        type: event.type,
+        imageUrl: event.imageUrl ?? null,
+        venue: event.venue,
+        city: event.city,
+        date: event.date,
+        capacity: event.capacity,
+        tiers: event.tiers ?? [],
+      });
+    } catch (err) {
+      console.error("Erro ao carregar evento para edição:", err);
+      alert("Não foi possível conectar ao servidor. Tente novamente.");
+    } finally {
+      setEditLoadingId(null);
+    }
   };
 
-  const handleSaveEvent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!data || !editingEvent) return;
-
-    const updatedEvents = data.events.map((item) => {
-      if (item.id === editingEvent.id) {
-        return {
-          ...item,
-          title: eventForm.title,
-          venue: eventForm.venue,
-          city: eventForm.city,
-          date: eventForm.date,
-          capacity: Number(eventForm.capacity),
-          imageUrl: uploadedImage || item.imageUrl,
-        };
-      }
-      return item;
-    });
-
-    setData({ ...data, events: updatedEvents });
-    setEditingEvent(null);
-    setUploadedImage(null);
+  const handleEventSaved = () => {
+    fetchDashboardData();
   };
 
   const getStatusClass = (status: DashboardEventItem["status"]) => {
@@ -549,6 +554,7 @@ export default function DashboardPage() {
                           className={styles.actionBtn}
                           aria-label="Editar"
                           onClick={() => handleOpenEdit(evt)}
+                          disabled={editLoadingId === evt.id}
                         >
                           <EditIcon size={14} />
                         </button>
@@ -668,8 +674,9 @@ export default function DashboardPage() {
                       type="button"
                       className={styles.btnCardAction}
                       onClick={() => handleOpenEdit(evt)}
+                      disabled={editLoadingId === evt.id}
                     >
-                      <EditIcon size={14} /> Editar
+                      <EditIcon size={14} /> {editLoadingId === evt.id ? "Carregando..." : "Editar"}
                     </button>
                     <button
                       type="button"
@@ -711,7 +718,6 @@ export default function DashboardPage() {
 
         {activeTab === "novo" && (
           <div className={styles.formCard}>
-            <h2 className={styles.sectionTitle}>Cadastrar Novo Evento</h2>
             <form
               className={styles.formGrid}
               onSubmit={(e) => {
@@ -719,7 +725,11 @@ export default function DashboardPage() {
                 alert("Novo evento cadastrado com sucesso!");
                 setActiveTab("eventos");
               }}
-            >
+            > 
+              <div className={styles.formGroupFull}>
+                <label className={styles.formLabel}>Nome do Evento / Filme</label>
+                <input type="text" className={styles.formInput} placeholder="Ex: Show Vintage Culture ou Avatar 3: Fogo e Cinzas" required />
+              </div>
               <div className={styles.formGroupFull}>
                 <label className={styles.formLabel}>Imagem do Evento (Upload do Computador)</label>
                 <div className={styles.imageDropzone}>
@@ -751,10 +761,7 @@ export default function DashboardPage() {
                 <input type="text" className={styles.formInput} placeholder="Ex: Rock, Stand-up Comedy, Pop, IMAX, Gastronomia" required />
               </div>
 
-              <div className={styles.formGroupFull}>
-                <label className={styles.formLabel}>Nome do Evento / Filme</label>
-                <input type="text" className={styles.formInput} placeholder="Ex: Show Vintage Culture ou Avatar 3: Fogo e Cinzas" required />
-              </div>
+
 
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Local / Casa de Show</label>
@@ -1012,139 +1019,13 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── EDIT EVENT MODAL WITH IMAGE UPLOADER ── */}
-      {editingEvent && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1200,
-            background: "rgba(0,0,0,0.85)",
-            backdropFilter: "blur(8px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-          }}
-          onClick={() => setEditingEvent(null)}
-        >
-          <div
-            style={{
-              background: "#121215",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "20px",
-              padding: "32px",
-              maxWidth: "500px",
-              width: "100%",
-              display: "flex",
-              flexDirection: "column",
-              gap: "20px",
-              position: "relative",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                background: "none",
-                border: "none",
-                color: "#a1a1aa",
-                cursor: "pointer",
-              }}
-              onClick={() => setEditingEvent(null)}
-            >
-              <XIcon size={18} />
-            </button>
-
-            <h3 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff" }}>
-              Editar Evento: {editingEvent.title}
-            </h3>
-
-            <form onSubmit={handleSaveEvent} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Imagem do Evento (Upload do Computador)</label>
-                <div className={styles.imageDropzone}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className={styles.fileInput}
-                    onChange={handleImageFileChange}
-                  />
-                  {uploadedImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={uploadedImage} alt="Preview da Imagem" className={styles.uploadPreview} />
-                  ) : (
-                    <div className={styles.uploadIconText}>
-                      <PlusIcon size={24} />
-                      <span>Subir nova imagem do computador</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Título do Evento</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={eventForm.title}
-                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Local</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={eventForm.venue}
-                  onChange={(e) => setEventForm({ ...eventForm, venue: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Cidade</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={eventForm.city}
-                  onChange={(e) => setEventForm({ ...eventForm, city: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Capacidade de Ingressos</label>
-                <input
-                  type="number"
-                  className={styles.formInput}
-                  value={eventForm.capacity}
-                  onChange={(e) => setEventForm({ ...eventForm, capacity: Number(e.target.value) })}
-                  required
-                />
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "10px" }}>
-                <button
-                  type="button"
-                  className={styles.btnCardAction}
-                  onClick={() => setEditingEvent(null)}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className={styles.btnSubmitForm}>
-                  Salvar Alterações
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* ── EDIT EVENT MODAL (persiste no banco via API) ── */}
+      <EventFormModal
+        isOpen={!!editingEvent}
+        onClose={() => setEditingEvent(null)}
+        onSaved={handleEventSaved}
+        event={editingEvent}
+      />
 
       {/* IN-APP CONFIRMATION POPUP FOR LOGOUT */}
       <ConfirmModal

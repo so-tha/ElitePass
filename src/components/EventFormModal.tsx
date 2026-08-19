@@ -61,30 +61,34 @@ export function EventFormModal({ isOpen, onClose, onSaved, event }: EventFormMod
 
   useEffect(() => {
     if (!isOpen) return;
-    if (event) {
-      setTitle(event.title);
-      setDescription(event.description ?? "");
-      setCategory(event.category);
-      setType(event.type);
-      setImageUrl(event.imageUrl ?? "");
-      setVenue(event.venue);
-      setCity(event.city);
-      setDate(toDatetimeLocal(event.date));
-      setCapacity(String(event.capacity));
-      setTiers(event.tiers.length > 0 ? event.tiers : [emptyTier()]);
-    } else {
-      setTitle("");
-      setDescription("");
-      setCategory("");
-      setType("SHOW");
-      setImageUrl("");
-      setVenue("");
-      setCity("");
-      setDate("");
-      setCapacity("");
-      setTiers([emptyTier()]);
-    }
-    setError(null);
+    // Defer state updates to avoid synchronous setState calls inside effect
+    const t = window.setTimeout(() => {
+      if (event) {
+        setTitle(event.title);
+        setDescription(event.description ?? "");
+        setCategory(event.category);
+        setType(event.type);
+        setImageUrl(event.imageUrl ?? "");
+        setVenue(event.venue);
+        setCity(event.city);
+        setDate(toDatetimeLocal(event.date));
+        setCapacity(String(event.capacity));
+        setTiers(event.tiers.length > 0 ? event.tiers : [emptyTier()]);
+      } else {
+        setTitle("");
+        setDescription("");
+        setCategory("");
+        setType("SHOW");
+        setImageUrl("");
+        setVenue("");
+        setCity("");
+        setDate("");
+        setCapacity("");
+        setTiers([emptyTier()]);
+      }
+      setError(null);
+    }, 0);
+    return () => window.clearTimeout(t);
   }, [isOpen, event]);
 
   useEffect(() => {
