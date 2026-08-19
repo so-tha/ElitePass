@@ -73,6 +73,7 @@
 }
 
 .searchHeading {
+  padding: 14px 14px;
   font-size: clamp(28px, 4.5vw, 44px);
   font-weight: 800;
   color: var(--color-text);
@@ -112,7 +113,7 @@
   background: none;
   border: none;
   outline: none;
-  font-size: 15px;
+  font-size: 18px;
   font-family: var(--font-base);
   color: var(--color-text);
 }
