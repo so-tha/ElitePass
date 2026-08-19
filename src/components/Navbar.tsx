@@ -3,14 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import styles from "./Navbar.module.css";
-import { PlusIcon, TicketIcon, UserIcon, HeartIcon, GridIcon, LogOutIcon } from "./icons";
+import { PlusIcon, TicketIcon, UserIcon, HeartIcon, GridIcon, LogOutIcon, SunIcon, MoonIcon } from "./icons";
 import { AuthModal } from "./AuthModal";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 import { ConfirmModal } from "./ConfirmModal";
 
 export function Navbar() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -49,6 +51,17 @@ export function Navbar() {
               <TicketIcon size={15} />
               <span>Meus ingressos</span>
             </Link>
+
+            <button
+              type="button"
+              className={styles.themeToggleBtn}
+              onClick={toggleTheme}
+              aria-label="Alternar tema"
+              title={theme === "dark" ? "Alternar para Modo Claro" : "Alternar para Modo Escuro"}
+            >
+              {theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+            </button>
+
             {user ? (
               <UserMenu />
             ) : (
@@ -73,14 +86,25 @@ export function Navbar() {
         </div>
 
         <div className={`${styles.mobilePanel} ${open ? styles.mobilePanelOpen : ""}`}>
-          <Link href="/#shows" className={styles.mobileLink} onClick={close}>Shows</Link>
-          <Link href="/#filmes" className={styles.mobileLink} onClick={close}>Filmes</Link>
           {user?.role === "ORGANIZER" && (
             <Link href="/dashboard?tab=novo" className={styles.mobileLink} onClick={close}>
               Criar evento
             </Link>
           )}
           <Link href="/tickets" className={styles.mobileLink} onClick={close}>Meus ingressos</Link>
+
+          <button
+            type="button"
+            className={styles.mobileLink}
+            style={{ background: "none", border: "none", width: "100%", textAlign: "left", cursor: "pointer" }}
+            onClick={() => {
+              toggleTheme();
+              close();
+            }}
+          >
+            {theme === "dark" ? <SunIcon size={15} /> : <MoonIcon size={15} />}
+            <span>{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>
+          </button>
 
           {user ? (
             <>

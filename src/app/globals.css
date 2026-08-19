@@ -6,23 +6,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  /* 60% — Preto/Fundo */
-  --color-bg:          #000000;
-  --color-bg-card:     #111111;
-  --color-bg-hover:    #1a1a1a;
-  --color-border:      #222222;
+  /* Dark Mode (Padrão) */
+  --color-bg:          #0b0c10;
+  --color-bg-surface:  #12141c;
+  --color-bg-card:     #161922;
+  --color-bg-hover:    #1c202c;
+  --color-border:      rgba(255, 255, 255, 0.08);
 
   /* 30% — Dourado/Âmbar */
   --color-primary:     #FFB22C;
   --color-primary-dark:#cc8a00;
   --color-primary-glow:rgba(255, 178, 44, 0.25);
 
-  /* 10% — Branco */
-  --color-text:        #f7f7f7;
-  --color-text-muted:  #888888;
-  --color-text-dim:    #555555;
+  /* 10% — Texto */
+  --color-text:        #ffffff;
+  --color-text-muted:  rgba(255, 255, 255, 0.7);
+  --color-text-dim:    rgba(255, 255, 255, 0.45);
 
-  /* Paleta complementar (Gemini) */
+  /* Paleta complementar */
   --color-gold:        #FFB22C;
   --color-gold-dark:   #cc8a00;
   --color-terra:       #854836;
@@ -38,6 +39,25 @@
 
   /* Transições */
   --transition: 0.2s ease;
+}
+
+[data-theme="light"] {
+  /* Light Mode (Modo Claro) */
+  --color-bg:          #f4f5f8;
+  --color-bg-surface:  #ffffff;
+  --color-bg-card:     #ffffff;
+  --color-bg-hover:    #eef0f5;
+  --color-border:      rgba(0, 0, 0, 0.08);
+
+  --color-primary:     #D98200;
+  --color-primary-dark:#b86e00;
+  --color-primary-glow:rgba(217, 130, 0, 0.2);
+
+  --color-text:        #12141d;
+  --color-text-muted:  #5e6475;
+  --color-text-dim:    #8c92a4;
+
+  color-scheme: light;
 }
 
 *, *::before, *::after {
@@ -60,6 +80,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 a {
@@ -95,13 +116,13 @@ img {
 
 select {
   color-scheme: dark;
-  background-color: #121215 !important;
-  color: #ffffff !important;
+  background-color: var(--color-bg-surface) !important;
+  color: var(--color-text) !important;
 }
 
 option {
-  background-color: #121215 !important;
-  color: #ffffff !important;
+  background-color: var(--color-bg-surface) !important;
+  color: var(--color-text) !important;
   padding: 10px 14px;
 }
 
@@ -110,5 +131,12 @@ option:focus,
 option:checked {
   background-color: var(--color-primary) !important;
   color: #000000 !important;
+}
+
+[data-theme="light"] select,
+[data-theme="light"] option {
+  color-scheme: light;
+  background-color: #ffffff !important;
+  color: #12141d !important;
 }
 
