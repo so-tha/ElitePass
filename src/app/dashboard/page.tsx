@@ -21,12 +21,140 @@ import type { DashboardData, DashboardEventItem } from "@/app/api/organizer/dash
 import { useAuth } from "@/lib/auth-context";
 import { redirect } from "next/navigation";
 
+const CATEGORY_OPTIONS = [
+  { value: "Shows e Festivais", label: "Shows e Festivais" },
+  { value: "Teatro e Espetáculos", label: "Teatro e Espetáculos" },
+  { value: "Festas e Baladas", label: "Festas e Baladas" },
+  { value: "Cinema e Mostras", label: "Cinema e Mostras" },
+  { value: "Cursos e Workshops", label: "Educação e Negócios" },
+  { value: "Congressos e Seminários", label: "Congressos e Seminários" },
+  { value: "Eventos Corporativos", label: "Eventos Corporativos" },
+  { value: "Eventos Esportivos", label: "Esportes e Lazer" },
+  { value: "Eventos Gastronômicos", label: "Eventos Gastronômicos" },
+  { value: "Passeios e Parques", label: "Passeios e Parques" },
+  { value: "Eventos Religiosos", label: "Eventos Religiosos" },
+  { value: "Eventos Online", label: "Eventos Online" },
+];
+
+function CustomCategorySelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const selectedOption = CATEGORY_OPTIONS.find((opt) => opt.value === value) || CATEGORY_OPTIONS[0];
+
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        className={styles.formInput}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          textAlign: "left",
+          cursor: "pointer",
+          background: "#121215",
+          borderColor: isOpen ? "var(--color-primary)" : "rgba(255, 255, 255, 0.1)",
+          boxShadow: isOpen ? "0 0 12px var(--color-primary-glow)" : "none",
+        }}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span>{selectedOption.label}</span>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--color-primary)"
+          strokeWidth="2.5"
+          style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 99 }}
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(100% + 6px)",
+              left: 0,
+              right: 0,
+              zIndex: 100,
+              background: "#121215",
+              border: "1px solid rgba(255, 178, 44, 0.3)",
+              borderRadius: "12px",
+              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.9)",
+              maxHeight: "260px",
+              overflowY: "auto",
+              padding: "6px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "2px",
+            }}
+          >
+            {CATEGORY_OPTIONS.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <div
+                  key={opt.value}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    color: isSelected ? "#000000" : "#ffffff",
+                    background: isSelected ? "var(--color-primary)" : "transparent",
+                    fontWeight: isSelected ? 700 : 500,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = "var(--color-primary)";
+                      e.currentTarget.style.color = "#000000";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "#ffffff";
+                    }
+                  }}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                >
+                  {opt.label}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user, accessToken, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<"dashboard" | "eventos" | "novo" | "config">("dashboard");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("Shows e Festivais");
+
 
   const [editingEvent, setEditingEvent] = useState<DashboardEventItem | null>(null);
 
@@ -518,9 +646,19 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Categoria do Evento</label>
+                <CustomCategorySelect value={selectedCategory} onChange={setSelectedCategory} />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Subcategoria / Gênero</label>
+                <input type="text" className={styles.formInput} placeholder="Ex: Rock, Stand-up Comedy, Pop, IMAX, Gastronomia" required />
+              </div>
+
               <div className={styles.formGroupFull}>
-                <label className={styles.formLabel}>Nome do Evento</label>
-                <input type="text" className={styles.formInput} placeholder="Ex: Show Vintage Culture Tour 2026" required />
+                <label className={styles.formLabel}>Nome do Evento / Filme</label>
+                <input type="text" className={styles.formInput} placeholder="Ex: Show Vintage Culture ou Avatar 3: Fogo e Cinzas" required />
               </div>
 
               <div className={styles.formGroup}>
