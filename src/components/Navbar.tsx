@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import styles from "./Navbar.module.css";
-import { PlusIcon, TicketIcon, UserIcon, HeartIcon, GridIcon, LogOutIcon, SunIcon, MoonIcon } from "./icons";
+import { PlusIcon, TicketIcon, UserIcon, HeartIcon, GridIcon, LogOutIcon, SunIcon, MoonIcon, ScanIcon } from "./icons";
 import { AuthModal } from "./AuthModal";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "@/lib/auth-context";
@@ -42,10 +42,18 @@ export function Navbar() {
                 <span>Criar evento</span>
               </Link>
             )}
-            <Link href="/tickets" className={styles.navActionItem}>
-              <TicketIcon size={15} />
-              <span>Meus ingressos</span>
-            </Link>
+            {user?.role === "DOORMAN" && (
+              <Link href="/portaria" className={styles.navActionItem}>
+                <ScanIcon size={15} />
+                <span>Portaria</span>
+              </Link>
+            )}
+            {user?.role !== "DOORMAN" && (
+              <Link href="/tickets" className={styles.navActionItem}>
+                <TicketIcon size={15} />
+                <span>Meus ingressos</span>
+              </Link>
+            )}
 
             <button
               type="button"
@@ -86,7 +94,14 @@ export function Navbar() {
               Criar evento
             </Link>
           )}
-          <Link href="/tickets" className={styles.mobileLink} onClick={close}>Meus ingressos</Link>
+          {user?.role === "DOORMAN" && (
+            <Link href="/portaria" className={styles.mobileLink} onClick={close}>
+              <ScanIcon size={15} /> Portaria
+            </Link>
+          )}
+          {user?.role !== "DOORMAN" && (
+            <Link href="/tickets" className={styles.mobileLink} onClick={close}>Meus ingressos</Link>
+          )}
 
           <button
             type="button"

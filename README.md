@@ -27,12 +27,13 @@ O **ElitePass** é uma plataforma de compra e gestão de ingressos para shows e 
 - [x] Área do cliente (meus ingressos)
 
 ### Frontend (organizador)
-- [ ] Dashboard de criação e gestão de eventos (em progresso)
+- [x] Dashboard de criação e gestão de eventos (em progresso)
 - [x] Integração com API externa de shows/catálogo
 - [ ] Controle de capacidade e vendas em tempo real (em progresso)
 
 ### Frontend (portaria)
-- [ ] Leitor de QR Code para validação de ingresso na entrada (em progresso)
+- [x] Leitor de QR Code (câmera) e digitação manual do código para validação de ingresso na entrada
+- [x] Retorno de status: válido, inválido, já utilizado ou evento errado
 
 ### Backend (API Node.js) — 📋 [Veja o ROADMAP Backend](./backend/ROADMAP.md)
 - [x] Autenticação JWT com três perfis (cliente, organizador, portaria)

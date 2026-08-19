@@ -267,3 +267,30 @@ export function MoonIcon({ size = 15, className }: IconProps) {
   );
 }
 
+export function ScanIcon({ size = 15, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+      <path d="M7 12h10" />
+    </svg>
+  );
+}
+
+export function KeyboardIcon({ size = 15, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <rect x="2" y="6" width="20" height="13" rx="2.5" />
+      <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9.5 14h5" />
+    </svg>
+  );
+}
+
+export function ShieldCheckIcon({ size = 15, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>
+      <path d="M12 2.5 4.5 5.5V11c0 5 3.2 8.7 7.5 10.5 4.3-1.8 7.5-5.5 7.5-10.5V5.5L12 2.5Z" />
+      <path d="m9 12 2 2 4-4.5" />
+    </svg>
+  );
+}
+

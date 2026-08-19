@@ -79,15 +79,30 @@ export async function getTicketByShareToken(req: Request, res: Response): Promis
   });
 }
 
+/** Erro tipado para os desfechos de validação (mapeado para reason no JSON de resposta). */
+class ValidationError extends Error {
+  constructor(public reason: string, public status: number, public extra?: Record<string, unknown>) {
+    super(reason);
+  }
+}
+
+const REASON_MESSAGES: Record<string, string> = {
+  NOT_FOUND:    "Ingresso não encontrado.",
+  FORBIDDEN:    "Acesso não autorizado para este ingresso.",
+  WRONG_EVENT:  "Este ingresso pertence a outro evento.",
+  CANCELLED:    "Ingresso cancelado.",
+  ALREADY_USED: "Ingresso já utilizado.",
+};
+
 export async function validateTicket(req: Request, res: Response): Promise<void> {
   const code = req.params.code as string;
-  const { qrData } = req.body as { qrData?: string };
+  const { qrData, eventId } = req.body as { qrData?: string; eventId?: string };
   const { user } = req as AuthenticatedRequest;
 
   if (qrData) {
     const { valid, code: qrCode } = verifyQrData(qrData);
     if (!valid || qrCode !== code) {
-      res.status(400).json({ error: "QR Code inválido ou adulterado." });
+      res.status(400).json({ error: "QR Code inválido ou adulterado.", ok: false, reason: "INVALID_QR" });
       return;
     }
   }
@@ -106,10 +121,15 @@ export async function validateTicket(req: Request, res: Response): Promise<void>
         },
       });
 
-      if (!found) throw new Error("NOT_FOUND");
-      if (!organizerOwnsTicket(found, user)) throw new Error("FORBIDDEN");
-      if (found.status === "USED")      throw new Error("ALREADY_USED");
-      if (found.status === "CANCELLED") throw new Error("CANCELLED");
+      if (!found) throw new ValidationError("NOT_FOUND", 404);
+      if (!organizerOwnsTicket(found, user)) throw new ValidationError("FORBIDDEN", 403);
+      if (eventId && found.order.eventId !== eventId) {
+        throw new ValidationError("WRONG_EVENT", 409, { ticketEventName: found.order.eventName });
+      }
+      if (found.status === "CANCELLED") throw new ValidationError("CANCELLED", 403);
+      if (found.status === "USED") {
+        throw new ValidationError("ALREADY_USED", 409, { usedAt: found.usedAt, holder: found.order.user.name });
+      }
 
       return tx.ticket.update({
         where:   { code },
@@ -124,6 +144,7 @@ export async function validateTicket(req: Request, res: Response): Promise<void>
 
     res.json({
       ok:          true,
+      reason:      "VALID",
       code:        ticket.code,
       validatedAt: ticket.usedAt,
       holder:      ticket.order.user.name,
@@ -131,11 +152,14 @@ export async function validateTicket(req: Request, res: Response): Promise<void>
       tierLabel:   ticket.order.tierLabel,
     });
   } catch (err) {
-    if (err instanceof Error) {
-      if (err.message === "NOT_FOUND")    { res.status(404).json({ error: "Ingresso não encontrado." }); return; }
-      if (err.message === "FORBIDDEN")    { res.status(403).json({ error: "Acesso não autorizado para este ingresso." }); return; }
-      if (err.message === "ALREADY_USED") { res.status(409).json({ error: "Ingresso já utilizado.", ok: false }); return; }
-      if (err.message === "CANCELLED")    { res.status(403).json({ error: "Ingresso cancelado.", ok: false }); return; }
+    if (err instanceof ValidationError) {
+      res.status(err.status).json({
+        ok:     false,
+        reason: err.reason,
+        error:  REASON_MESSAGES[err.reason] ?? "Não foi possível validar o ingresso.",
+        ...err.extra,
+      });
+      return;
     }
     throw err;
   }

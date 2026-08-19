@@ -2,9 +2,7 @@ import { prisma } from "../src/prisma";
 import bcrypt from "bcryptjs";
 
 async function main() {
-  console.log("🌱 Iniciando o seed de eventos no banco de dados...");
 
-  // 1. Obter ou Criar o Usuário Organizador
   let organizer = await prisma.user.findFirst({
     where: { role: "ORGANIZER" },
   });
@@ -20,12 +18,11 @@ async function main() {
         role: "ORGANIZER",
       },
     });
-    console.log(`👤 Criado novo organizador: ${organizer.email}`);
+    console.log(`Criado novo organizador: ${organizer.email}`);
   } else {
-    console.log(`👤 Usando organizador existente: ${organizer.email} (${organizer.id})`);
+    console.log(`Usando organizador existente: ${organizer.email} (${organizer.id})`);
   }
 
-  // 2. Obter ou Criar um Usuário Cliente para gerar pedidos de teste
   let clientUser = await prisma.user.findFirst({
     where: { role: "CLIENT" },
   });
@@ -41,6 +38,24 @@ async function main() {
         role: "CLIENT",
       },
     });
+  }
+
+  let doorman = await prisma.user.findFirst({
+    where: { role: "DOORMAN" },
+  });
+
+  if (!doorman) {
+    const hashedPassword = await bcrypt.hash("123456", 10);
+    doorman = await prisma.user.create({
+      data: {
+        name: "Portaria ElitePass",
+        email: "portaria@elitepass.com",
+        cpf: "555.444.333-22",
+        password: hashedPassword,
+        role: "DOORMAN",
+      },
+    });
+    console.log(`🚪 Criado novo usuário de portaria: ${doorman.email}`);
   }
 
   // 3. Criar os 5 Eventos (3 Shows e 2 Cinema)
@@ -152,7 +167,6 @@ async function main() {
 
     console.log(`✅ Evento criado [${event.type}]: ${event.title}`);
 
-    // Criar um pedido confirmado de teste para o evento para alimentar métricas de receita
     const orderAmount = item.tiers[0].priceUnit * 2;
     await prisma.order.create({
       data: {
@@ -188,7 +202,7 @@ async function main() {
     });
   }
 
-  console.log("🎉 Seed concluído com sucesso!");
+  console.log("Seed concluído com sucesso!");
 }
 
 main()
