@@ -30,6 +30,25 @@ export async function createEvent(req: Request, res: Response): Promise<void> {
 
   const data = parse.data;
 
+  // Trava de segurança contra duplo clique / reenvio do formulário: se o mesmo organizador
+  // acabou de criar um evento idêntico (título + local + data), devolve o evento existente
+  // em vez de criar uma cópia.
+  const DUPLICATE_WINDOW_MS = 15_000;
+  const recentDuplicate = await prisma.event.findFirst({
+    where: {
+      organizerId: userId,
+      title: data.title,
+      venue: data.venue,
+      city: data.city,
+      date: data.date,
+      createdAt: { gte: new Date(Date.now() - DUPLICATE_WINDOW_MS) },
+    },
+  });
+  if (recentDuplicate) {
+    res.status(201).json({ event: recentDuplicate });
+    return;
+  }
+
   const event = await prisma.event.create({
     data: {
       organizerId: userId,

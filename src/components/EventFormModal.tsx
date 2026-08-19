@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./EventFormModal.module.css";
 import { useAuth } from "@/lib/auth-context";
 import { XIcon, PlusIcon, AlertTriangleIcon } from "./icons";
@@ -58,6 +58,7 @@ export function EventFormModal({ isOpen, onClose, onSaved, event }: EventFormMod
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -118,6 +119,7 @@ export function EventFormModal({ isOpen, onClose, onSaved, event }: EventFormMod
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setError(null);
 
     if (!title.trim() || title.trim().length < 3) return setError("Título deve ter ao menos 3 caracteres.");
@@ -152,6 +154,7 @@ export function EventFormModal({ isOpen, onClose, onSaved, event }: EventFormMod
       tiers: tiersWithIds,
     };
 
+    submittingRef.current = true;
     setLoading(true);
     try {
       const url = isEditMode ? `/api/organizer/events/${event!.id}` : "/api/organizer/events";
@@ -170,6 +173,7 @@ export function EventFormModal({ isOpen, onClose, onSaved, event }: EventFormMod
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar evento.");
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
