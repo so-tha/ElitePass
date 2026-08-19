@@ -3,8 +3,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import type { StripeCardElementOptions } from "@stripe/stripe-js";
+import {
+  Elements,
+  CardNumberElement,
+  CardExpiryElement,
+  CardCvcElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+import type { StripeCardNumberElementOptions } from "@stripe/stripe-js";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
 import { Stepper } from "@/components/Stepper";
@@ -167,7 +174,7 @@ function Skeleton() {
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "");
 
-const cardElementOptions: StripeCardElementOptions = {
+const cardFieldOptions: StripeCardNumberElementOptions = {
   style: {
     base: {
       color: "#f7f7f7",
@@ -210,7 +217,7 @@ function EventCheckout() {
   const [formErrors, setFormErrors] = useState<Partial<typeof form>>({});
   const [processing, setProcessing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
-  const [cardComplete, setCardComplete] = useState(false);
+  const [cardComplete, setCardComplete] = useState({ number: false, expiry: false, cvc: false });
   const [cardError, setCardError] = useState<string | null>(null);
   const [pendingOrder, setPendingOrder] = useState<{ id: string; clientSecret: string } | null>(null);
 
@@ -287,8 +294,8 @@ function EventCheckout() {
     }
     if (!stripe || !elements) return;
 
-    const cardElement = elements.getElement(CardElement);
-    if (!cardElement || !cardComplete) {
+    const cardNumberElement = elements.getElement(CardNumberElement);
+    if (!cardNumberElement || !cardComplete.number || !cardComplete.expiry || !cardComplete.cvc) {
       setPurchaseError("Preencha os dados do cartão corretamente.");
       return;
     }
@@ -325,7 +332,7 @@ function EventCheckout() {
 
       const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(order.clientSecret, {
         payment_method: {
-          card: cardElement,
+          card: cardNumberElement,
           billing_details: { name: form.name, email: form.email },
         },
       });
@@ -576,19 +583,47 @@ function EventCheckout() {
 
               <h2 className={styles.sectionTitle} style={{ marginTop: 32 }}>Dados do cartão</h2>
 
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Cartão de crédito</label>
-                <div className={`${styles.input} ${styles.stripeCardWrap} ${cardError ? styles.inputError : ""}`}>
-                  <CardElement
-                    options={cardElementOptions}
-                    onChange={(e) => {
-                      setCardComplete(e.complete);
-                      setCardError(e.error?.message ?? null);
-                    }}
-                  />
+              <div className={styles.formGrid}>
+                <div className={`${styles.formGroup} ${styles.colSpan2}`}>
+                  <label className={styles.label}>Número do cartão</label>
+                  <div className={`${styles.input} ${styles.stripeCardWrap}`}>
+                    <CardNumberElement
+                      options={cardFieldOptions}
+                      onChange={(e) => {
+                        setCardComplete((c) => ({ ...c, number: e.complete }));
+                        setCardError(e.error?.message ?? null);
+                      }}
+                    />
+                  </div>
                 </div>
-                {cardError && <span className={styles.fieldError}>{cardError}</span>}
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Validade</label>
+                  <div className={`${styles.input} ${styles.stripeCardWrap}`}>
+                    <CardExpiryElement
+                      options={cardFieldOptions}
+                      onChange={(e) => {
+                        setCardComplete((c) => ({ ...c, expiry: e.complete }));
+                        setCardError(e.error?.message ?? null);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>CVV</label>
+                  <div className={`${styles.input} ${styles.stripeCardWrap}`}>
+                    <CardCvcElement
+                      options={cardFieldOptions}
+                      onChange={(e) => {
+                        setCardComplete((c) => ({ ...c, cvc: e.complete }));
+                        setCardError(e.error?.message ?? null);
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
+              {cardError && <span className={styles.fieldError}>{cardError}</span>}
 
               <p className={styles.mockBadge}>
                 <AlertTriangleIcon size={12} /> Ambiente de teste Stripe — use 4242 4242 4242 4242 (aprovado) ou 4000 0000 0000 0002 (recusado), com qualquer CVC e validade futura.
