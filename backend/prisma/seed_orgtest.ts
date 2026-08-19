@@ -2,8 +2,6 @@ import { prisma } from "../src/prisma";
 import bcrypt from "bcryptjs";
 
 async function main() {
-  console.log("🚀 Criando/atualizando a conta do organizador organizador@teste.local...");
-
   const email = "organizador@teste.local";
   const passwordPlain = "OrgTest123!";
   const name = "Organizador Teste";
@@ -23,9 +21,8 @@ async function main() {
         role: "ORGANIZER",
       },
     });
-    console.log(`✅ Criado organizador: ${organizer.name} (${organizer.email})`);
+    console.log(`Criado organizador: ${organizer.name} (${organizer.email})`);
   } else {
-    // Garantir que a senha e role estejam corretos
     const hashedPassword = await bcrypt.hash(passwordPlain, 10);
     organizer = await prisma.user.update({
       where: { email },
@@ -35,10 +32,8 @@ async function main() {
         role: "ORGANIZER",
       },
     });
-    console.log(`🔄 Atualizada senha e perfil do organizador: ${organizer.email}`);
   }
 
-  // Obter um usuário cliente para os pedidos de teste
   let clientUser = await prisma.user.findFirst({
     where: { role: "CLIENT" },
   });
@@ -56,7 +51,6 @@ async function main() {
     });
   }
 
-  // 5 Novos Eventos cadastrados para organizador@teste.local
   const newEvents = [
     {
       title: "Coldplay — Music of the Spheres Tour 2026",
@@ -164,9 +158,8 @@ async function main() {
       },
     });
 
-    console.log(`🎉 Criado evento [${event.category}]: ${event.title}`);
+    console.log(`Criado evento [${event.category}]: ${event.title}`);
 
-    // Adicionar pedido de vendas confirmado para o painel de estatísticas
     const orderAmount = item.tiers[0].priceUnit * 3;
     await prisma.order.create({
       data: {
@@ -207,12 +200,12 @@ async function main() {
     });
   }
 
-  console.log("✨ Finalizado! 5 novos eventos atribuídos a organizador@teste.local com sucesso!");
+  console.log("Finalizado!");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Erro:", e);
+    console.error("Erro:", e);
     process.exit(1);
   })
   .finally(async () => {
