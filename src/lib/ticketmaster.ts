@@ -138,6 +138,16 @@ export function generateMockPrices(event: TMEvent): MockPriceRange {
   return { min, mid, max, currency: "BRL", isMock: true };
 }
 
+export function getEventMinPrice(event: TMEvent): number {
+  if (event.priceRanges?.length) return event.priceRanges[0].min;
+  return generateMockPrices(event).min;
+}
+
+export function parseLocalDate(localDate: string): Date {
+  const [year, month, day] = localDate.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function formatPrice(event: TMEvent): string {
   // Usa preço real da API se disponível
   if (event.priceRanges?.length) {
@@ -159,8 +169,7 @@ export function formatPrice(event: TMEvent): string {
 }
 
 export function formatDate(localDate: string): string {
-  const [year, month, day] = localDate.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString("pt-BR", {
+  return parseLocalDate(localDate).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",

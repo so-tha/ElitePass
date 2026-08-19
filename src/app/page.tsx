@@ -25,6 +25,8 @@ import {
   getArtistName,
   getVenue,
   getCategory,
+  getEventMinPrice,
+  parseLocalDate,
 } from "@/lib/ticketmaster";
 import {
   TMDBMovie,
@@ -32,6 +34,8 @@ import {
   formatMoviePrice,
   formatMovieDate,
   GENRE_MAP,
+  getMovieMinPrice,
+  parseReleaseDate,
 } from "@/lib/tmdb";
 
 function CardSkeleton() {
@@ -114,6 +118,124 @@ function getCategoryBadge(categoryStr: string) {
       return { key, label: "CINEMA", bg: "rgba(139, 92, 246, 0.18)", color: "#A855F7", border: "1px solid #A855F7" };
     default:
       return { key, label: categoryStr.toUpperCase().substring(0, 10), bg: "rgba(255, 178, 44, 0.18)", color: "#FFB22C", border: "1px solid #FFB22C" };
+  }
+}
+
+const TYPE_TO_GROUP: Partial<Record<string, CategoryGroupKey>> = {
+  "Shows & Festivais": "SHOWS",
+  "Teatro & Dança": "TEATRO",
+  "Comédia & Stand-up": "COMEDIA",
+  "Cinema & Mostras": "CINEMA",
+};
+
+function matchesTypeFilter(event: TMEvent, selectedType: string): boolean {
+  const wanted = TYPE_TO_GROUP[selectedType];
+  if (!wanted) return true;
+  return getCategoryGroupKey(getCategory(event)) === wanted;
+}
+
+function matchesLocationFilter(event: TMEvent, selectedLocation: string): boolean {
+  if (selectedLocation === "Todos os Locais") return true;
+  const cityPart = selectedLocation.split("—")[0].trim();
+  const eventCity = event._embedded?.venues?.[0]?.city?.name ?? "";
+  return eventCity.toLowerCase().includes(cityPart.toLowerCase());
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function isWithinWeekend(date: Date, now: Date): boolean {
+  const day = now.getDay();
+  const diffToSaturday = day === 0 ? -1 : 6 - day;
+  const saturday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToSaturday);
+  const sunday = new Date(saturday.getFullYear(), saturday.getMonth(), saturday.getDate() + 1);
+  return isSameDay(date, saturday) || isSameDay(date, sunday);
+}
+
+function isWithinNext30Days(date: Date, now: Date): boolean {
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const in30 = new Date(startOfToday);
+  in30.setDate(startOfToday.getDate() + 30);
+  return date >= startOfToday && date <= in30;
+}
+
+function matchesDateFilter(date: Date | null, selectedDate: string): boolean {
+  if (selectedDate === "Todas as Datas") return true;
+  if (!date) return false;
+  const now = new Date();
+  if (selectedDate === "Hoje") return isSameDay(date, now);
+  if (selectedDate === "Este Fim de Semana") return isWithinWeekend(date, now);
+  if (selectedDate === "Próximos 30 Dias") return isWithinNext30Days(date, now);
+  return true;
+}
+
+function sortEventList(list: TMEvent[], sortLabel: string): TMEvent[] {
+  const arr = [...list];
+  const byDate = (a: TMEvent, b: TMEvent) =>
+    parseLocalDate(a.dates.start.localDate).getTime() - parseLocalDate(b.dates.start.localDate).getTime();
+  const byPriceAsc = (a: TMEvent, b: TMEvent) => getEventMinPrice(a) - getEventMinPrice(b);
+
+  switch (sortLabel) {
+    case "Menor Preço":
+      return arr.sort(byPriceAsc);
+    case "Maior Preço":
+      return arr.sort((a, b) => byPriceAsc(b, a));
+    case "Mais Recente":
+      return arr.sort(byDate);
+    default: // "Mais Recente • Menor Preço"
+      return arr.sort((a, b) => byDate(a, b) || byPriceAsc(a, b));
+  }
+}
+
+function movieDateTime(movie: TMDBMovie): number {
+  const d = parseReleaseDate(movie.release_date);
+  return d ? d.getTime() : Infinity;
+}
+
+function sortMovieList(list: TMDBMovie[], sortLabel: string): TMDBMovie[] {
+  const arr = [...list];
+  const byDate = (a: TMDBMovie, b: TMDBMovie) => movieDateTime(a) - movieDateTime(b);
+  const byPriceAsc = (a: TMDBMovie, b: TMDBMovie) => getMovieMinPrice(a) - getMovieMinPrice(b);
+
+  switch (sortLabel) {
+    case "Menor Preço":
+      return arr.sort(byPriceAsc);
+    case "Maior Preço":
+      return arr.sort((a, b) => byPriceAsc(b, a));
+    case "Mais Recente":
+      return arr.sort(byDate);
+    default: // "Mais Recente • Menor Preço"
+      return arr.sort((a, b) => byDate(a, b) || byPriceAsc(a, b));
+  }
+}
+
+type SearchResultItem =
+  | { type: "event"; data: TMEvent }
+  | { type: "movie"; data: TMDBMovie };
+
+function searchItemPrice(item: SearchResultItem): number {
+  return item.type === "event" ? getEventMinPrice(item.data) : getMovieMinPrice(item.data);
+}
+
+function searchItemDateTime(item: SearchResultItem): number {
+  return item.type === "event" ? parseLocalDate(item.data.dates.start.localDate).getTime() : movieDateTime(item.data);
+}
+
+function sortSearchResults(list: SearchResultItem[], sortLabel: string): SearchResultItem[] {
+  const arr = [...list];
+  const byDate = (a: SearchResultItem, b: SearchResultItem) => searchItemDateTime(a) - searchItemDateTime(b);
+  const byPriceAsc = (a: SearchResultItem, b: SearchResultItem) => searchItemPrice(a) - searchItemPrice(b);
+
+  switch (sortLabel) {
+    case "Menor Preço":
+      return arr.sort(byPriceAsc);
+    case "Maior Preço":
+      return arr.sort((a, b) => byPriceAsc(b, a));
+    case "Mais Recente":
+      return arr.sort(byDate);
+    default: // "Mais Recente • Menor Preço"
+      return arr.sort((a, b) => byDate(a, b) || byPriceAsc(a, b));
   }
 }
 
@@ -261,25 +383,53 @@ export default function Home() {
     };
   }, [events, movies, checkScroll]);
 
-  type SearchResultItem =
-    | { type: "event"; data: TMEvent }
-    | { type: "movie"; data: TMDBMovie };
+  const showMoviesSection = selectedType === "Todos os Tipos" || selectedType === "Cinema & Mostras";
+
+  const filteredEvents = useMemo(() => {
+    const filtered = events.filter(
+      (event) =>
+        matchesTypeFilter(event, selectedType) &&
+        matchesLocationFilter(event, selectedLocation) &&
+        matchesDateFilter(parseLocalDate(event.dates.start.localDate), selectedDate)
+    );
+    return sortEventList(filtered, selectedSort);
+  }, [events, selectedType, selectedLocation, selectedDate, selectedSort]);
+
+  const filteredMovies = useMemo(() => {
+    if (!showMoviesSection) return [];
+    const filtered = movies.filter((movie) => matchesDateFilter(parseReleaseDate(movie.release_date), selectedDate));
+    return sortMovieList(filtered, selectedSort);
+  }, [movies, selectedDate, selectedSort, showMoviesSection]);
 
   const searchResults = useMemo<SearchResultItem[]>(() => {
-    const eventItems: SearchResultItem[] = events.map((e) => ({ type: "event", data: e }));
-    const movieItems: SearchResultItem[] = movies.map((m) => ({ type: "movie", data: m }));
-    return [...eventItems, ...movieItems];
-  }, [events, movies]);
+    const eventItems: SearchResultItem[] = filteredEvents.map((e) => ({ type: "event", data: e }));
+    const movieItems: SearchResultItem[] = filteredMovies.map((m) => ({ type: "movie", data: m }));
+    return sortSearchResults([...eventItems, ...movieItems], selectedSort);
+  }, [filteredEvents, filteredMovies, selectedSort]);
 
   const eventsByGroup = useMemo(() => {
     const map = new Map<CategoryGroupKey, TMEvent[]>();
-    for (const event of events) {
+    for (const event of filteredEvents) {
       const key = getCategoryGroupKey(getCategory(event));
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(event);
     }
     return map;
-  }, [events]);
+  }, [filteredEvents]);
+
+  const moviesByGenre = useMemo(() => {
+    const map = new Map<string, TMDBMovie[]>();
+    const order: string[] = [];
+    for (const movie of filteredMovies) {
+      const genreName = movie.genre_ids?.[0] ? GENRE_MAP[movie.genre_ids[0]] ?? "Outros" : "Outros";
+      if (!map.has(genreName)) {
+        map.set(genreName, []);
+        order.push(genreName);
+      }
+      map.get(genreName)!.push(movie);
+    }
+    return { map, order };
+  }, [filteredMovies]);
 
   const renderEventCard = (event: TMEvent) => {
     const catInfo = getCategoryBadge(getCategory(event));
@@ -647,7 +797,7 @@ export default function Home() {
           </section>
         )}
 
-        {!error && !loading && events.length === 0 && (
+        {!error && !loading && filteredEvents.length === 0 && (
           <section id="shows" className={styles.showsSection}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Shows e Eventos</h2>
@@ -672,24 +822,51 @@ export default function Home() {
             );
           })}
 
-        <section id="filmes" className={styles.showsSection}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Filmes</h2>
-            {moviesLoading && <span className={styles.loadingDot}>Carregando...</span>}
-          </div>
-
-          {moviesError ? (
-            <p className={styles.noResults}><AlertTriangleIcon size={13} /> {moviesError}</p>
-          ) : !moviesLoading && movies.length === 0 ? (
-            <p className={styles.noResults}>Nenhum filme encontrado.</p>
-          ) : (
-            <div className={styles.showsGrid}>
-              {moviesLoading
-                ? Array.from({ length: 9 }).map((_, i) => <CardSkeleton key={i} />)
-                : movies.slice(0, 9).map((movie) => renderMovieCard(movie))}
+        {showMoviesSection && moviesError && (
+          <section id="filmes" className={styles.showsSection}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Filmes</h2>
             </div>
-          )}
-        </section>
+            <p className={styles.noResults}><AlertTriangleIcon size={13} /> {moviesError}</p>
+          </section>
+        )}
+
+        {showMoviesSection && !moviesError && moviesLoading && (
+          <section id="filmes" className={styles.showsSection}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Filmes</h2>
+              <span className={styles.loadingDot}>Carregando...</span>
+            </div>
+            <div className={styles.showsGrid}>
+              {Array.from({ length: 9 }).map((_, i) => <CardSkeleton key={i} />)}
+            </div>
+          </section>
+        )}
+
+        {showMoviesSection && !moviesError && !moviesLoading && filteredMovies.length === 0 && (
+          <section id="filmes" className={styles.showsSection}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Filmes</h2>
+            </div>
+            <p className={styles.noResults}>Nenhum filme encontrado.</p>
+          </section>
+        )}
+
+        {showMoviesSection && !moviesError && !moviesLoading &&
+          moviesByGenre.order.map((genreName) => {
+            const genreMovies = moviesByGenre.map.get(genreName) ?? [];
+            if (genreMovies.length === 0) return null;
+            return (
+              <section key={genreName} id={`filmes-${genreName.toLowerCase()}`} className={styles.showsSection}>
+                <div className={styles.sectionHeader}>
+                  <h2 className={styles.sectionTitle}>Filmes — {genreName}</h2>
+                </div>
+                <div className={styles.showsGrid}>
+                  {genreMovies.slice(0, 9).map((movie) => renderMovieCard(movie))}
+                </div>
+              </section>
+            );
+          })}
           </>
         )}
       </main>

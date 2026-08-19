@@ -99,10 +99,20 @@ export function formatMoviePrice(movie: TMDBMovie): string {
   }).format(min);
 }
 
-export function formatMovieDate(date: string): string {
-  if (!date) return "Data a confirmar";
+export function getMovieMinPrice(movie: TMDBMovie): number {
+  return generateMoviePrice(movie).min;
+}
+
+export function parseReleaseDate(date: string): Date | null {
+  if (!date) return null;
   const [year, month, day] = date.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString("pt-BR", {
+  return new Date(year, month - 1, day);
+}
+
+export function formatMovieDate(date: string): string {
+  const parsed = parseReleaseDate(date);
+  if (!parsed) return "Data a confirmar";
+  return parsed.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
