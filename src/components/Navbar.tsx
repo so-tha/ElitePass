@@ -42,12 +42,6 @@ export function Navbar() {
                 <span>Criar evento</span>
               </Link>
             )}
-            {user?.role === "DOORMAN" && (
-              <Link href="/portaria" className={styles.navActionItem}>
-                <ScanIcon size={15} />
-                <span>Portaria</span>
-              </Link>
-            )}
             {user?.role !== "DOORMAN" && (
               <Link href="/tickets" className={styles.navActionItem}>
                 <TicketIcon size={15} />
@@ -92,11 +86,6 @@ export function Navbar() {
           {user?.role === "ORGANIZER" && (
             <Link href="/dashboard?tab=novo" className={styles.mobileLink} onClick={close}>
               Criar evento
-            </Link>
-          )}
-          {user?.role === "DOORMAN" && (
-            <Link href="/portaria" className={styles.mobileLink} onClick={close}>
-              <ScanIcon size={15} /> Portaria
             </Link>
           )}
           {user?.role !== "DOORMAN" && (

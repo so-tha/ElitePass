@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import styles from "./UserMenu.module.css";
-import { UserIcon, HeartIcon, TicketIcon, GridIcon, LogOutIcon, ChevronDownIcon } from "./icons";
+import { UserIcon, HeartIcon, TicketIcon, GridIcon, LogOutIcon, ChevronDownIcon, ShieldCheckIcon } from "./icons";
 import { useAuth } from "@/lib/auth-context";
 import { ConfirmModal } from "./ConfirmModal";
 
@@ -37,6 +37,7 @@ export function UserMenu() {
 
   const initial = user.name.trim().charAt(0).toUpperCase();
   const isOrganizer = user.role === "ORGANIZER";
+  const isDoorman = user.role === "DOORMAN";
 
   const handleLogoutClick = () => {
     setOpen(false);
@@ -75,6 +76,14 @@ export function UserMenu() {
                   <UserIcon size={15} /> Minha conta
                 </Link>
               </li>
+
+              {isDoorman && (
+                <li>
+                  <Link href="/portaria" className={styles.menuItem} role="menuitem" onClick={() => setOpen(false)}>
+                    <ShieldCheckIcon size={15} /> Validação
+                  </Link>
+                </li>
+              )}
 
               {isOrganizer && (
                 <>

@@ -108,7 +108,6 @@ export default function PortariaPage() {
   const router = useRouter();
   const { user, accessToken, loading: authLoading } = useAuth();
 
-  const [tab, setTab] = useState<"camera" | "manual">("camera");
   const [events, setEvents] = useState<PortariaEventItem[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [selectedEventId, setSelectedEventId] = useState<string>("");
@@ -267,47 +266,33 @@ export default function PortariaPage() {
 
         <div className={styles.layout}>
           <div className={styles.scanPanel}>
-            <div className={styles.tabs}>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${tab === "camera" ? styles.tabBtnActive : ""}`}
-                onClick={() => setTab("camera")}
-              >
-                <ScanIcon size={14} />
-                <span>Câmera</span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${tab === "manual" ? styles.tabBtnActive : ""}`}
-                onClick={() => setTab("manual")}
-              >
-                <KeyboardIcon size={14} />
-                <span>Código manual</span>
-              </button>
+            <div className={styles.sectionHeader}>
+              <ScanIcon size={14} />
+              <span>Câmera</span>
             </div>
+            <QrScanner onDecode={handleScan} paused={Boolean(result) || validating} />
 
-            {tab === "camera" ? (
-              <QrScanner onDecode={handleScan} paused={Boolean(result) || validating} />
-            ) : (
-              <form className={styles.manualForm} onSubmit={handleManualSubmit}>
-                <input
-                  type="text"
-                  className={styles.manualInput}
-                  placeholder="Digite o código do ingresso (ex.: MIC-PI-20260817-832941)"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  disabled={validating || Boolean(result)}
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className={styles.btnValidate}
-                  disabled={validating || Boolean(result) || !manualCode.trim()}
-                >
-                  {validating ? "Validando..." : "Validar entrada"}
-                </button>
-              </form>
-            )}
+            <div className={styles.sectionHeader}>
+              <KeyboardIcon size={14} />
+              <span>Código manual</span>
+            </div>
+            <form className={styles.manualForm} onSubmit={handleManualSubmit}>
+              <input
+                type="text"
+                className={styles.manualInput}
+                placeholder="Digite o código do ingresso (ex.: MIC-PI-20260817-832941)"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                disabled={validating || Boolean(result)}
+              />
+              <button
+                type="submit"
+                className={styles.btnValidate}
+                disabled={validating || Boolean(result) || !manualCode.trim()}
+              >
+                {validating ? "Validando..." : "Validar entrada"}
+              </button>
+            </form>
 
             {result && (
               <div className={`${styles.resultCard} ${styles[`result${result.status}`]}`}>
