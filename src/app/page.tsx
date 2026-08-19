@@ -259,8 +259,6 @@ function getCategoryBadge(categoryStr: string) {
           </div>
 
           <div>
-            <p className={styles.ticketsAvailableTag}>Ingressos disponíveis: ~150</p>
-
             <div className={styles.cardFooterRow}>
               <div className={styles.priceBlock}>
                 <span className={styles.priceLabel}>A partir de</span>

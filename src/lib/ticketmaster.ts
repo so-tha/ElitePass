@@ -183,9 +183,18 @@ export function getVenue(event: TMEvent): string {
   return location ? `${venueName}, ${location}` : venueName;
 }
 
+function isValidName(name: string | undefined): name is string {
+  return !!name && name.trim().toLowerCase() !== "undefined";
+}
+
 export function getCategory(event: TMEvent): string {
   const classification = event.classifications?.[0];
-  return classification?.genre?.name ?? classification?.segment?.name ?? "Evento";
+  const genreName = classification?.genre?.name;
+  const segmentName = classification?.segment?.name;
+
+  if (isValidName(genreName)) return genreName;
+  if (isValidName(segmentName)) return segmentName;
+  return "OTHER";
 }
 
 export async function searchEvents(params: TMSearchParams = {}): Promise<TMEvent[]> {
