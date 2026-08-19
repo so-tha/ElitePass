@@ -84,9 +84,6 @@ export function Navbar() {
               </a>
               {user.role === "ORGANIZER" && (
                 <>
-                  <a href="#meus-eventos" className={styles.mobileLink} onClick={close}>
-                    <TicketIcon size={15} /> Meus eventos
-                  </a>
                   <Link href="/dashboard" className={styles.mobileLink} onClick={close}>
                     <GridIcon size={15} /> Dashboard
                   </Link>
