@@ -146,6 +146,28 @@ Para esses eventos, o cliente insere um **preço simulado** no frontend que é a
 
 ---
 
+## ⚠️ Limitações Conhecidas
+
+### Cancelamento de Ingressos — Ajuste Parcial de Receita
+
+Quando um cliente cancela um ingresso individual de um pedido com múltiplos ingressos (ex: comprou 3 ingressos, cancelou 1), o sistema:
+
+✅ **Faz corretamente:**
+- Estorna o valor proporcional na Stripe
+- Devolve a vaga (decrementa `Event.soldCount` ou libera um assento reservado)
+- Marca o ingresso como `CANCELLED`
+- Se todos os ingressos do pedido forem cancelados, marca o pedido como `CANCELLED`
+
+❌ **Não ajusta:**
+- A receita total agregada no dashboard do organizador (`Order.totalAmount` não é decrementada)
+- Mantém o pedido como `CONFIRMED` mesmo com cancelamentos parciais
+
+**Motivo:** A receita hoje é rastreada por pedido (campo único `Order.totalAmount`), não por ingresso. Um ajuste completo exigiria desnormalizar valores por ingresso, com migração de dados históricos.
+
+**Impacto:** Se um organizador vendeu 100 ingressos por R$ 1.000 cada (R$ 100.000 de receita), e 10 clientes cancelarem 1 ingresso cada, o painel ainda exibirá R$ 100.000 de receita (não R$ 90.000), enquanto o `soldCount`/ocupação estarão corretos. Os estornos na Stripe refletem corretamente os cancelamentos.
+
+---
+
 ## 🔒 Segurança & Arquitetura
 
 ### Camadas de Proteção Implementadas
