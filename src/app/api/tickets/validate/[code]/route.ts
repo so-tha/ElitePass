@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export interface ValidateTicketPayload {
   qrData?: string;
-  eventId?: string;
 }
 
 export interface ValidateTicketResponse {
   ok: boolean;
-  reason: "VALID" | "NOT_FOUND" | "FORBIDDEN" | "WRONG_EVENT" | "CANCELLED" | "ALREADY_USED" | "INVALID_QR";
+  reason: "VALID" | "NOT_FOUND" | "FORBIDDEN" | "CANCELLED" | "ALREADY_USED" | "INVALID_QR";
   error?: string;
   code?: string;
   validatedAt?: string | null;
@@ -15,7 +14,6 @@ export interface ValidateTicketResponse {
   eventName?: string;
   tierLabel?: string;
   usedAt?: string | null;
-  ticketEventName?: string;
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ code: string }> }) {

@@ -89,14 +89,13 @@ class ValidationError extends Error {
 const REASON_MESSAGES: Record<string, string> = {
   NOT_FOUND:    "Ingresso não encontrado.",
   FORBIDDEN:    "Acesso não autorizado para este ingresso.",
-  WRONG_EVENT:  "Este ingresso pertence a outro evento.",
   CANCELLED:    "Ingresso cancelado.",
   ALREADY_USED: "Ingresso já utilizado.",
 };
 
 export async function validateTicket(req: Request, res: Response): Promise<void> {
   const code = req.params.code as string;
-  const { qrData, eventId } = req.body as { qrData?: string; eventId?: string };
+  const { qrData } = req.body as { qrData?: string };
   const { user } = req as AuthenticatedRequest;
 
   if (qrData) {
@@ -109,8 +108,10 @@ export async function validateTicket(req: Request, res: Response): Promise<void>
 
   try {
     const ticket = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const found = await tx.ticket.findUnique({
-        where:   { code },
+      // O identificador vindo da portaria pode ser o código legível (QR / digitação) ou o
+      // shareToken (quando o link público do ingresso é colado no campo de código manual).
+      const found = await tx.ticket.findFirst({
+        where:   { OR: [{ code }, { shareToken: code }] },
         include: {
           order: {
             include: {
@@ -123,16 +124,13 @@ export async function validateTicket(req: Request, res: Response): Promise<void>
 
       if (!found) throw new ValidationError("NOT_FOUND", 404);
       if (!organizerOwnsTicket(found, user)) throw new ValidationError("FORBIDDEN", 403);
-      if (eventId && found.order.eventId !== eventId) {
-        throw new ValidationError("WRONG_EVENT", 409, { ticketEventName: found.order.eventName });
-      }
       if (found.status === "CANCELLED") throw new ValidationError("CANCELLED", 403);
       if (found.status === "USED") {
         throw new ValidationError("ALREADY_USED", 409, { usedAt: found.usedAt, holder: found.order.user.name });
       }
 
       return tx.ticket.update({
-        where:   { code },
+        where:   { id: found.id },
         data:    { status: "USED", usedAt: new Date() },
         include: {
           order: {

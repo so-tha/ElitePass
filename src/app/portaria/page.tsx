@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
@@ -14,10 +14,9 @@ import {
   XIcon,
   AlertTriangleIcon,
 } from "@/components/icons";
-import type { PortariaEventItem } from "@/app/api/portaria/events/route";
 import type { ValidateTicketResponse } from "@/app/api/tickets/validate/[code]/route";
 
-type OutcomeStatus = "VALID" | "ALREADY_USED" | "WRONG_EVENT" | "INVALID";
+type OutcomeStatus = "VALID" | "ALREADY_USED" | "INVALID";
 
 interface Outcome {
   id: string;
@@ -29,15 +28,29 @@ interface Outcome {
   meta?: string;
 }
 
-const LAST_EVENT_STORAGE_KEY = "elitepass:portaria:lastEventId";
-
 function nowLabel(): string {
   return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-/** Extrai o código do ingresso a partir do texto lido no QR ("EP:<code>:<hmac>") ou de um código digitado manualmente. */
+/**
+ * Extrai o identificador do ingresso a partir do texto lido no QR ("EP:<code>:<hmac>"), de um
+ * link de compartilhamento colado ("http://host/ticket/<shareToken>") ou de um código digitado
+ * manualmente. O backend aceita tanto o código legível quanto o shareToken como identificador.
+ */
 function parseScan(raw: string): { code: string; qrData?: string } {
   const text = raw.trim();
+
+  try {
+    const url = new URL(text);
+    const segments = url.pathname.split("/").filter(Boolean);
+    const ticketIdx = segments.indexOf("ticket");
+    if (ticketIdx !== -1 && segments[ticketIdx + 1]) {
+      return { code: segments[ticketIdx + 1] };
+    }
+  } catch {
+    // não é uma URL completa, segue para os outros formatos abaixo
+  }
+
   const parts = text.split(":");
   if (parts.length === 3 && parts[0] === "EP") {
     return { code: parts[1], qrData: text };
@@ -76,17 +89,6 @@ function buildOutcome(data: ValidateTicketResponse, attemptedCode: string): Outc
     };
   }
 
-  if (data.reason === "WRONG_EVENT") {
-    return {
-      id,
-      status: "WRONG_EVENT",
-      code,
-      time,
-      title: "Evento errado",
-      meta: data.ticketEventName ? `Este ingresso é do evento: ${data.ticketEventName}` : undefined,
-    };
-  }
-
   return {
     id,
     status: "INVALID",
@@ -100,17 +102,12 @@ function buildOutcome(data: ValidateTicketResponse, attemptedCode: string): Outc
 const STATUS_LABEL: Record<OutcomeStatus, string> = {
   VALID: "Válido",
   ALREADY_USED: "Já utilizado",
-  WRONG_EVENT: "Evento errado",
   INVALID: "Inválido",
 };
 
 export default function PortariaPage() {
   const router = useRouter();
   const { user, accessToken, loading: authLoading } = useAuth();
-
-  const [events, setEvents] = useState<PortariaEventItem[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
-  const [selectedEventId, setSelectedEventId] = useState<string>("");
 
   const [manualCode, setManualCode] = useState("");
   const [validating, setValidating] = useState(false);
@@ -122,59 +119,8 @@ export default function PortariaPage() {
     if (!user || user.role !== "DOORMAN") router.replace("/");
   }, [authLoading, user, router]);
 
-  useEffect(() => {
-    if (authLoading || !user || user.role !== "DOORMAN" || !accessToken) return;
-
-    let cancelled = false;
-    (async () => {
-      try {
-        setEventsLoading(true);
-        const res = await fetch("/api/portaria/events", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        const data = await res.json();
-        if (!res.ok || cancelled) return;
-        const list: PortariaEventItem[] = data.events ?? [];
-        setEvents(list);
-
-        const stored = window.localStorage.getItem(LAST_EVENT_STORAGE_KEY);
-        if (stored && list.some((e) => e.id === stored)) {
-          setSelectedEventId(stored);
-        } else if (list.length > 0) {
-          setSelectedEventId(list[0].id);
-        }
-      } finally {
-        if (!cancelled) setEventsLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, user, accessToken]);
-
-  useEffect(() => {
-    if (selectedEventId) window.localStorage.setItem(LAST_EVENT_STORAGE_KEY, selectedEventId);
-  }, [selectedEventId]);
-
-  const selectedEvent = useMemo(
-    () => events.find((e) => e.id === selectedEventId) ?? null,
-    [events, selectedEventId]
-  );
-
   async function runValidation(input: { code: string; qrData?: string }) {
     if (!input.code || !accessToken) return;
-    if (!selectedEventId) {
-      setResult({
-        id: `no-event-${Date.now()}`,
-        status: "INVALID",
-        code: input.code,
-        time: nowLabel(),
-        title: "Selecione um evento",
-        meta: "Escolha o evento em que a portaria está atuando antes de validar.",
-      });
-      return;
-    }
 
     setValidating(true);
     try {
@@ -184,7 +130,7 @@ export default function PortariaPage() {
           "content-type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ qrData: input.qrData, eventId: selectedEventId }),
+        body: JSON.stringify({ qrData: input.qrData }),
       });
       const data: ValidateTicketResponse = await res.json();
       const outcome = buildOutcome(data, input.code);
@@ -238,32 +184,6 @@ export default function PortariaPage() {
           <p className={styles.pageSubtitle}>Valide os ingressos na entrada do evento por câmera ou código manual.</p>
         </div>
 
-        <div className={styles.eventPicker}>
-          <label className={styles.eventLabel} htmlFor="portaria-event-select">
-            Evento em validação
-          </label>
-          <select
-            id="portaria-event-select"
-            className={styles.eventSelect}
-            value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value)}
-            disabled={eventsLoading || events.length === 0}
-          >
-            {eventsLoading && <option>Carregando eventos...</option>}
-            {!eventsLoading && events.length === 0 && <option>Nenhum evento publicado</option>}
-            {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.title} — {ev.venue}
-              </option>
-            ))}
-          </select>
-          {selectedEvent && (
-            <span className={styles.eventMeta}>
-              {selectedEvent.city} · {new Date(selectedEvent.date).toLocaleDateString("pt-BR")}
-            </span>
-          )}
-        </div>
-
         <div className={styles.layout}>
           <div className={styles.scanPanel}>
             <div className={styles.sectionHeader}>
@@ -280,7 +200,7 @@ export default function PortariaPage() {
               <input
                 type="text"
                 className={styles.manualInput}
-                placeholder="Digite o código do ingresso (ex.: MIC-PI-20260817-832941)"
+                placeholder="Digite o código ou cole o link do ingresso"
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
                 disabled={validating || Boolean(result)}
@@ -299,7 +219,7 @@ export default function PortariaPage() {
                 <div className={styles.resultIcon}>
                   {result.status === "VALID" && <CheckIcon size={22} />}
                   {result.status === "ALREADY_USED" && <AlertTriangleIcon size={20} />}
-                  {(result.status === "WRONG_EVENT" || result.status === "INVALID") && <XIcon size={20} />}
+                  {result.status === "INVALID" && <XIcon size={20} />}
                 </div>
                 <span className={styles.resultBadge}>{STATUS_LABEL[result.status]}</span>
                 <h3 className={styles.resultTitle}>{result.title}</h3>
