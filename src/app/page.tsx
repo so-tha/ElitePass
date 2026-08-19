@@ -194,85 +194,165 @@ export default function Home() {
     return [...eventItems, ...movieItems];
   }, [events, movies]);
 
-  const renderEventCard = (event: TMEvent) => (
-    <div
-      key={event.id}
-      className={styles.showCard}
-      id={`card-show-${event.id}`}
-      onClick={() => router.push(`/events/${event.id}`)}
-    >
-      <div className={styles.cardImage}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={getBestImage(event.images)}
-          alt={event.name}
-          className={styles.cardImg}
-          loading="lazy"
-        />
-        <span className={styles.cardBadge}>{getCategory(event)}</span>
-      </div>
-      <div className={styles.cardBody}>
-        <p className={styles.cardArtist}>{getArtistName(event)}</p>
-        <p className={styles.cardTitle}>{event.name}</p>
-        <p className={styles.cardDate}><CalendarIcon size={12} />{formatDate(event.dates.start.localDate)}</p>
-        <p className={styles.cardVenue}><MapPinIcon size={12} />{getVenue(event)}</p>
-        <div className={styles.cardFooter}>
-          <span className={styles.cardPrice}>{formatPrice(event)}</span>
-          <button
-            className={styles.btnCard}
-            id={`btn-confira-${event.id}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/events/${event.id}`);
-            }}
-          >
-            Comprar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+function getCategoryBadge(categoryStr: string) {
+  const cat = categoryStr.toUpperCase();
+  if (cat.includes("COMÉDIA") || cat.includes("STAND-UP")) {
+    return { label: "COMÉDIA", bg: "rgba(255, 178, 44, 0.18)", color: "#FFB22C", border: "1px solid #FFB22C" };
+  }
+  if (cat.includes("TEATRO") || cat.includes("ESPETÁCULO")) {
+    return { label: "TEATRO", bg: "rgba(239, 68, 68, 0.18)", color: "#EF4444", border: "1px solid #EF4444" };
+  }
+  if (cat.includes("PALESTRA") || cat.includes("CURSO") || cat.includes("WORKSHOP") || cat.includes("EDUCAÇÃO")) {
+    return { label: "PALESTRA", bg: "rgba(16, 185, 129, 0.18)", color: "#10B981", border: "1px solid #10B981" };
+  }
+  if (cat.includes("POP") || cat.includes("MPB") || cat.includes("ROCK") || cat.includes("SHOW")) {
+    return { label: "MPB/POP", bg: "rgba(59, 130, 246, 0.18)", color: "#3B82F6", border: "1px solid #3B82F6" };
+  }
+  if (cat.includes("CINEMA") || cat.includes("FILME") || cat.includes("MOVIE")) {
+    return { label: "CINEMA", bg: "rgba(139, 92, 246, 0.18)", color: "#A855F7", border: "1px solid #A855F7" };
+  }
+  return { label: categoryStr.toUpperCase().substring(0, 10), bg: "rgba(255, 178, 44, 0.18)", color: "#FFB22C", border: "1px solid #FFB22C" };
+}
 
-  const renderMovieCard = (movie: TMDBMovie) => (
-    <div
-      key={movie.id}
-      className={styles.showCard}
-      id={`card-movie-${movie.id}`}
-      onClick={() => router.push(`/movies/${movie.id}`)}
-    >
-      <div className={styles.cardImage}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={tmdbPoster(movie.poster_path)}
-          alt={movie.title}
-          className={styles.cardImg}
-          loading="lazy"
-        />
-        <span className={styles.cardBadge}>
-          {movie.genre_ids?.[0] ? GENRE_MAP[movie.genre_ids[0]] ?? "Filme" : "Filme"}
-        </span>
-      </div>
-      <div className={styles.cardBody}>
-        <p className={styles.cardArtist}><StarIcon size={11} />{movie.vote_average.toFixed(1)}</p>
-        <p className={styles.cardTitle}>{movie.title}</p>
-        <p className={styles.cardDate}><CalendarIcon size={12} />{formatMovieDate(movie.release_date)}</p>
-        <p className={styles.cardVenue}><FilmIcon size={12} />No cinema</p>
-        <div className={styles.cardFooter}>
-          <span className={styles.cardPrice}>{formatMoviePrice(movie)}</span>
-          <button
-            className={styles.btnCard}
-            id={`btn-comprar-movie-${movie.id}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/movies/${movie.id}`);
-            }}
-          >
-            Comprar
-          </button>
+  const renderEventCard = (event: TMEvent) => {
+    const catInfo = getCategoryBadge(getCategory(event));
+    return (
+      <div
+        key={event.id}
+        className={styles.showCard}
+        id={`card-show-${event.id}`}
+        onClick={() => router.push(`/events/${event.id}`)}
+      >
+        <div className={styles.cardImage}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={getBestImage(event.images)}
+            alt={event.name}
+            className={styles.cardImg}
+            loading="lazy"
+          />
+          <span className={styles.cardPosterBadge}>{getCategory(event)}</span>
+        </div>
+
+        <div className={styles.cardBody}>
+          <div>
+            <div className={styles.cardHeaderRow}>
+              <span className={styles.cardTitle} title={event.name}>{event.name}</span>
+              <span
+                className={styles.cardCategoryBadge}
+                style={{ background: catInfo.bg, color: catInfo.color, border: catInfo.border }}
+              >
+                {catInfo.label}
+              </span>
+            </div>
+
+            <div className={styles.cardMetaGroup}>
+              <span className={styles.cardDateText}>
+                <CalendarIcon size={11} />
+                {formatDate(event.dates.start.localDate)}
+              </span>
+              <span className={styles.cardVenueText}>
+                <MapPinIcon size={11} />
+                <span>{getVenue(event)}</span>
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <p className={styles.ticketsAvailableTag}>Ingressos disponíveis: ~150</p>
+
+            <div className={styles.cardFooterRow}>
+              <div className={styles.priceBlock}>
+                <span className={styles.priceLabel}>A partir de</span>
+                <span className={styles.priceAmount}>{formatPrice(event)}</span>
+              </div>
+              <button
+                className={styles.btnComprarCard}
+                id={`btn-confira-${event.id}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/events/${event.id}`);
+                }}
+              >
+                Comprar Ingressos
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  const renderMovieCard = (movie: TMDBMovie) => {
+    const genreName = movie.genre_ids?.[0] ? GENRE_MAP[movie.genre_ids[0]] ?? "Cinema" : "Cinema";
+    const catInfo = getCategoryBadge(genreName);
+    return (
+      <div
+        key={movie.id}
+        className={styles.showCard}
+        id={`card-movie-${movie.id}`}
+        onClick={() => router.push(`/movies/${movie.id}`)}
+      >
+        <div className={styles.cardImage}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={tmdbPoster(movie.poster_path)}
+            alt={movie.title}
+            className={styles.cardImg}
+            loading="lazy"
+          />
+          <span className={styles.cardPosterBadge}>IMAX 3D</span>
+        </div>
+
+        <div className={styles.cardBody}>
+          <div>
+            <div className={styles.cardHeaderRow}>
+              <span className={styles.cardTitle} title={movie.title}>{movie.title}</span>
+              <span
+                className={styles.cardCategoryBadge}
+                style={{ background: catInfo.bg, color: catInfo.color, border: catInfo.border }}
+              >
+                {catInfo.label}
+              </span>
+            </div>
+
+            <div className={styles.cardMetaGroup}>
+              <span className={styles.cardDateText}>
+                <CalendarIcon size={11} />
+                {formatMovieDate(movie.release_date)}
+              </span>
+              <span className={styles.cardVenueText}>
+                <FilmIcon size={11} />
+                <span>Cinemark & UCI IMAX</span>
+                <span className={styles.verMapaLink}>Ver Sessões</span>
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <p className={styles.ticketsAvailableTag}>Ingressos disponíveis: ~150</p>
+
+            <div className={styles.cardFooterRow}>
+              <div className={styles.priceBlock}>
+                <span className={styles.priceLabel}>A partir de</span>
+                <span className={styles.priceAmount}>{formatMoviePrice(movie)}</span>
+              </div>
+              <button
+                className={styles.btnComprarCard}
+                id={`btn-comprar-movie-${movie.id}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/movies/${movie.id}`);
+                }}
+              >
+                Comprar Ingressos
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className={styles.root}>
@@ -324,40 +404,14 @@ export default function Home() {
             {!loading && !moviesLoading && searchResults.length === 0 ? (
               <p className={styles.noResults}>Nenhum resultado encontrado para &quot;{search}&quot;.</p>
             ) : (
-              <div className={styles.carouselWrapper}>
-                {showsScroll.canLeft && (
-                  <button
-                    className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
-                    onClick={() => scroll(trackRef, "left", setShowsScroll)}
-                    aria-label="Anterior"
-                  >
-                    <ChevronLeftIcon size={22} />
-                  </button>
-                )}
-
-                <div
-                  className={styles.showsTrack}
-                  ref={trackRef}
-                  onScroll={() => checkScroll(trackRef, setShowsScroll)}
-                >
-                  {loading || moviesLoading
-                    ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-                    : searchResults.map((item) =>
-                        item.type === "event"
-                          ? renderEventCard(item.data as TMEvent)
-                          : renderMovieCard(item.data as TMDBMovie)
-                      )}
-                </div>
-
-                {showsScroll.canRight && (
-                  <button
-                    className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
-                    onClick={() => scroll(trackRef, "right", setShowsScroll)}
-                    aria-label="Próximo"
-                  >
-                    <ChevronRightIcon size={22} />
-                  </button>
-                )}
+              <div className={styles.showsGrid}>
+                {loading || moviesLoading
+                  ? Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)
+                  : searchResults.map((item) =>
+                      item.type === "event"
+                        ? renderEventCard(item.data as TMEvent)
+                        : renderMovieCard(item.data as TMDBMovie)
+                    )}
               </div>
             )}
           </section>
@@ -472,36 +526,10 @@ export default function Home() {
             {!loading && events.length === 0 ? (
               <p className={styles.noResults}>Nenhum show encontrado para essa busca.</p>
             ) : (
-              <div className={styles.carouselWrapper}>
-                {showsScroll.canLeft && (
-                  <button
-                    className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
-                    onClick={() => scroll(trackRef, "left", setShowsScroll)}
-                    aria-label="Anterior"
-                  >
-                    <ChevronLeftIcon size={22} />
-                  </button>
-                )}
-
-                <div
-                  className={styles.showsTrack}
-                  ref={trackRef}
-                  onScroll={() => checkScroll(trackRef, setShowsScroll)}
-                >
-                  {loading
-                    ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-                    : events.map((event) => renderEventCard(event))}
-                </div>
-
-                {showsScroll.canRight && (
-                  <button
-                    className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
-                    onClick={() => scroll(trackRef, "right", setShowsScroll)}
-                    aria-label="Próximo"
-                  >
-                    <ChevronRightIcon size={22} />
-                  </button>
-                )}
+              <div className={styles.showsGrid}>
+                {loading
+                  ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                  : events.slice(0, 6).map((event) => renderEventCard(event))}
               </div>
             )}
           </section>
@@ -518,36 +546,10 @@ export default function Home() {
           ) : !moviesLoading && movies.length === 0 ? (
             <p className={styles.noResults}>Nenhum filme encontrado.</p>
           ) : (
-            <div className={styles.carouselWrapper}>
-              {moviesScroll.canLeft && (
-                <button
-                  className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
-                  onClick={() => scroll(moviesRef, "left", setMoviesScroll)}
-                  aria-label="Ver filmes anteriores"
-                >
-                  <ChevronLeftIcon size={22} />
-                </button>
-              )}
-
-              <div
-                className={styles.showsTrack}
-                ref={moviesRef}
-                onScroll={() => checkScroll(moviesRef, setMoviesScroll)}
-              >
-                {moviesLoading
-                  ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-                  : movies.map((movie) => renderMovieCard(movie))}
-              </div>
-
-              {moviesScroll.canRight && (
-                <button
-                  className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
-                  onClick={() => scroll(moviesRef, "right", setMoviesScroll)}
-                  aria-label="Ver próximos filmes"
-                >
-                  <ChevronRightIcon size={22} />
-                </button>
-              )}
+            <div className={styles.showsGrid}>
+              {moviesLoading
+                ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                : movies.slice(0, 6).map((movie) => renderMovieCard(movie))}
             </div>
           )}
         </section>
