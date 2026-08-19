@@ -68,19 +68,9 @@ export function UserMenu() {
                 <UserIcon size={15} /> Minha conta
               </Link>
             </li>
-            <li>
-              <a href="#favoritos" className={styles.menuItem} role="menuitem" onClick={() => setOpen(false)}>
-                <HeartIcon size={15} /> Favoritos
-              </a>
-            </li>
 
             {isOrganizer && (
               <>
-                <li>
-                  <a href="#meus-eventos" className={styles.menuItem} role="menuitem" onClick={() => setOpen(false)}>
-                    <TicketIcon size={15} /> Meus eventos
-                  </a>
-                </li>
                 <li>
                   <Link href="/dashboard" className={styles.menuItem} role="menuitem" onClick={() => setOpen(false)}>
                     <GridIcon size={15} /> Dashboard

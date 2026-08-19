@@ -79,9 +79,6 @@ export function Navbar() {
               <Link href="/account" className={styles.mobileLink} onClick={close}>
                 <UserIcon size={15} /> Minha conta
               </Link>
-              <a href="#favoritos" className={styles.mobileLink} onClick={close}>
-                <HeartIcon size={15} /> Favoritos
-              </a>
               {user.role === "ORGANIZER" && (
                 <>
                   <Link href="/dashboard" className={styles.mobileLink} onClick={close}>
