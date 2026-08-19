@@ -174,6 +174,18 @@ function movieDateTime(movie: TMDBMovie): number {
   return d ? d.getTime() : Infinity;
 }
 
+/** Verifica se um filme está em cartaz (lançado há no máximo 30 dias e já foi lançado). */
+function isMovieInTheaters(movie: TMDBMovie): boolean {
+  const releaseDate = parseReleaseDate(movie.release_date);
+  if (!releaseDate) return false;
+
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+
+  return releaseDate <= now && releaseDate >= thirtyDaysAgo;
+}
+
 function sortMovieList(list: TMDBMovie[], sortLabel: string): TMDBMovie[] {
   const arr = [...list];
   const byDate = (a: TMDBMovie, b: TMDBMovie) => movieDateTime(a) - movieDateTime(b);
@@ -311,7 +323,8 @@ export default function Home() {
 
   const filteredMovies = useMemo(() => {
     if (!showMoviesSection) return [];
-    const filtered = movies.filter((movie) => matchesDateFilter(parseReleaseDate(movie.release_date), selectedDate));
+    const inTheaters = movies.filter(isMovieInTheaters);
+    const filtered = inTheaters.filter((movie) => matchesDateFilter(parseReleaseDate(movie.release_date), selectedDate));
     return sortMovieList(filtered, selectedSort);
   }, [movies, selectedDate, selectedSort, showMoviesSection]);
 
