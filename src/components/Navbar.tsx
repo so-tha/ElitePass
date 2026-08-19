@@ -35,11 +35,6 @@ export function Navbar() {
             <span className={styles.logoText}>ElitePass</span>
           </Link>
 
-          <nav className={styles.navLinks}>
-            <Link href="/#shows" className={styles.navLink}>Shows</Link>
-            <Link href="/#filmes" className={styles.navLink}>Filmes</Link>
-          </nav>
-
           <div className={styles.navActions}>
             {user?.role === "ORGANIZER" && (
               <Link href="/dashboard?tab=novo" className={styles.navActionItem}>

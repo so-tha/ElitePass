@@ -414,105 +414,6 @@ function getCategoryBadge(categoryStr: string) {
           </section>
         ) : (
           <>
-        <section className={styles.cardSliderSection}>
-          <div className={styles.sliderHeader}>
-            <h2 className={styles.sliderTitle}>Destaques em Cartaz</h2>
-            {(loading || moviesLoading) && <span className={styles.loadingDot}>Carregando...</span>}
-          </div>
-
-          <div className={styles.sliderWrapper}>
-            {sliderScroll.canLeft && (
-              <button
-                className={`${styles.sideNavBtn} ${styles.sideNavLeft}`}
-                onClick={() => scroll(sliderRef, "left", setSliderScroll)}
-                aria-label="Anterior"
-              >
-                <ChevronLeftIcon size={22} />
-              </button>
-            )}
-
-            <div
-              className={styles.sliderTrack}
-              ref={sliderRef}
-              onScroll={() => checkScroll(sliderRef, setSliderScroll)}
-            >
-              {loading && moviesLoading
-                ? Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className={`${styles.sliderCard} ${styles.skeleton}`} />
-                  ))
-                : featuredItems.map((item, idx) => {
-                    const isEvent = item.type === "event";
-                    const ev = isEvent ? (item.data as TMEvent) : null;
-                    const mv = !isEvent ? (item.data as TMDBMovie) : null;
-
-                    const imgUrl = isEvent
-                      ? getBestImage(ev!.images)
-                      : `https://image.tmdb.org/t/p/w780${mv!.poster_path ?? mv!.backdrop_path ?? ""}`;
-                    const badge = isEvent ? getCategory(ev!) : GENRE_MAP[mv!.genre_ids?.[0]] ?? "Filme";
-                    const title = isEvent ? ev!.name : mv!.title;
-                    const typeLabel = isEvent ? "SHOW" : "FILME";
-                    const price = isEvent ? formatPrice(ev!) : formatMoviePrice(mv!);
-                    const href = isEvent ? `/events/${ev!.id}` : `/movies/${mv!.id}`;
-
-                    return (
-                      <div
-                        key={idx}
-                        className={styles.sliderCard}
-                        onClick={() => router.push(href)}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={imgUrl} alt={title} className={styles.sliderCardImg} loading="lazy" />
-                        <div className={styles.sliderCardOverlay}>
-                          <div className={styles.cardHeaderBadges}>
-                            <span className={styles.sliderBadge}>{badge}</span>
-                            <span className={styles.sliderTypeBadge}>{typeLabel}</span>
-                          </div>
-                          <div className={styles.cardFooterContent}>
-                            <h3 className={styles.sliderCardTitle}>{title}</h3>
-                            <div className={styles.sliderMetaRow}>
-                              {isEvent ? (
-                                <>
-                                  <span className={styles.metaItem}><MapPinIcon size={12} />{getVenue(ev!)}</span>
-                                  <span className={styles.metaItem}><CalendarIcon size={12} />{formatDate(ev!.dates.start.localDate)}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <span className={styles.metaItem}><StarIcon size={12} />{mv!.vote_average.toFixed(1)} / 10</span>
-                                  <span className={styles.metaItem}><CalendarIcon size={12} />{formatMovieDate(mv!.release_date)}</span>
-                                </>
-                              )}
-                            </div>
-                            <div className={styles.sliderActionRow}>
-                              <span className={styles.sliderPrice}>{price}</span>
-                              <button
-                                className={styles.btnSliderBuy}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  router.push(href);
-                                }}
-                              >
-                                Comprar
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-            </div>
-
-            {sliderScroll.canRight && (
-              <button
-                className={`${styles.sideNavBtn} ${styles.sideNavRight}`}
-                onClick={() => scroll(sliderRef, "right", setSliderScroll)}
-                aria-label="Próximo"
-              >
-                <ChevronRightIcon size={22} />
-              </button>
-            )}
-          </div>
-        </section>
-
         {!error && (
           <section id="shows" className={styles.showsSection}>
             <div className={styles.sectionHeader}>
@@ -525,8 +426,8 @@ function getCategoryBadge(categoryStr: string) {
             ) : (
               <div className={styles.showsGrid}>
                 {loading
-                  ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-                  : events.slice(0, 6).map((event) => renderEventCard(event))}
+                  ? Array.from({ length: 9 }).map((_, i) => <CardSkeleton key={i} />)
+                  : events.slice(0, 9).map((event) => renderEventCard(event))}
               </div>
             )}
           </section>
@@ -545,8 +446,8 @@ function getCategoryBadge(categoryStr: string) {
           ) : (
             <div className={styles.showsGrid}>
               {moviesLoading
-                ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
-                : movies.slice(0, 6).map((movie) => renderMovieCard(movie))}
+                ? Array.from({ length: 9 }).map((_, i) => <CardSkeleton key={i} />)
+                : movies.slice(0, 9).map((movie) => renderMovieCard(movie))}
             </div>
           )}
         </section>

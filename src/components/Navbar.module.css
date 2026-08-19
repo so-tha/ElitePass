@@ -10,9 +10,9 @@
 }
 
 .navInner {
-  max-width: 1360px;
-  margin: 0 auto;
-  padding: 0 28px;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 48px;
   height: 72px;
   display: flex;
   align-items: center;
@@ -189,6 +189,9 @@
 }
 
 @media (max-width: 860px) {
+  .navInner {
+    padding: 0 20px;
+  }
   .navLinks,
   .navActions .btnAuth,
   .navActions .navActionItem {
