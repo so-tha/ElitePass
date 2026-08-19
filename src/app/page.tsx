@@ -322,7 +322,6 @@ function getCategoryBadge(categoryStr: string) {
               <span className={styles.cardVenueText}>
                 <FilmIcon size={11} />
                 <span>Cinemark & UCI IMAX</span>
-                <span className={styles.verMapaLink}>Ver Sessões</span>
               </span>
             </div>
           </div>
