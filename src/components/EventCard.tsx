@@ -10,7 +10,7 @@ import {
 } from "@/components/icons";
 
 export interface EventCardProps {
-  id: string;
+  href: string;
   title: string;
   image: string;
   category: string;
@@ -25,7 +25,7 @@ export interface EventCardProps {
 }
 
 const EventCard: React.FC<EventCardProps> = ({
-  id,
+  href,
   title,
   image,
   category,
@@ -41,7 +41,11 @@ const EventCard: React.FC<EventCardProps> = ({
   const router = useRouter();
 
   const handleClick = () => {
-    onClick ? onClick() : router.push(`/events/${id}`);
+    if (onClick) {
+      onClick();
+    } else {
+      router.push(href);
+    }
   };
 
   const badgeStyle = categoryBadge
@@ -74,7 +78,7 @@ const EventCard: React.FC<EventCardProps> = ({
         {/* Rating */}
         {rating && (
           <div className={styles.ratingBadge}>
-            <StarIcon size={12} fill="currentColor" />
+            <StarIcon size={12} />
             <span>{rating.toFixed(1)}</span>
           </div>
         )}
@@ -122,7 +126,13 @@ const EventCard: React.FC<EventCardProps> = ({
             <span className={styles.priceLabel}>A partir de</span>
             <span className={styles.priceValue}>{price}</span>
           </div>
-          <button className={styles.ctaButton} onClick={(e) => e.stopPropagation()}>
+          <button
+            className={styles.ctaButton}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClick();
+            }}
+          >
             <TicketIcon size={13} />
             Comprar
           </button>

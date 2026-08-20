@@ -331,7 +331,7 @@ export default function Home() {
     return (
       <EventCard
         key={event.id}
-        id={event.id}
+        href={`/events/${event.id}`}
         title={event.name}
         image={getBestImage(event.images)}
         category={getCategory(event)}
@@ -351,7 +351,7 @@ export default function Home() {
     return (
       <EventCard
         key={movie.id}
-        id={String(movie.id)}
+        href={`/movies/${movie.id}`}
         title={movie.title}
         image={tmdbPoster(movie.poster_path)}
         category="CINEMA"
