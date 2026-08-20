@@ -277,6 +277,70 @@ npm run db:studio
 
 **Nota:** O backend valida automaticamente todas as env vars obrigatórias no startup (Zod schema). Se alguma estiver faltando, o servidor exibe mensagem clara e encerra, evitando falhas silenciosas em produção.
 
+### 🐳 Rodar com Docker (Recomendado)
+
+Para rodar a aplicação completa (Frontend + Backend + PostgreSQL) em containers:
+
+```bash
+# 1. Execute o script de inicialização (cria .env, constrói imagens, inicia containers)
+bash docker-init.sh
+
+# Aguarde ~30 segundos para tudo iniciar
+# Acesse:
+#   Frontend: http://localhost:3000
+#   Backend:  http://localhost:3001
+
+# 2. Usar Makefile para comandos comuns
+make help              # Ver todos os comandos
+make docker-logs       # Ver logs em tempo real
+make docker-down       # Parar containers
+make prisma-studio    # Abrir UI do banco
+```
+
+**Importante:** A primeira vez leva mais tempo (build das imagens). Depois, `docker-compose up -d` é rápido.
+
+Documentação completa: veja [DOCKER.md](./DOCKER.md)
+
+### 🔑 Credenciais de Teste
+
+O banco de dados é populado automaticamente com usuários de teste e eventos de exemplo. Use essas credenciais para testar cada perfil:
+
+#### 👤 Cliente (Comprador de Ingressos)
+```
+E-mail: cliente@elitepass.com
+Senha: 123456
+CPF:   111.222.333-44
+Função: Buscar, comprar e gerenciar ingressos
+```
+
+#### 👔 Organizador (Criador de Eventos)
+```
+E-mail: organizador@elitepass.com
+Senha: 123456
+CPF:   999.888.777-66
+Função: Criar eventos, gerenciar tiers, acompanhar vendas
+```
+
+#### 🚪 Portaria (Validador de Ingressos)
+```
+E-mail: portaria@elitepass.com
+Senha: 123456
+CPF:   555.444.333-22
+Função: Validar ingressos via QR Code na entrada do evento
+```
+
+#### 📋 Eventos Pré-Carregados
+
+A seed do banco cria automaticamente 5 eventos de teste:
+
+1. **Arctic Monkeys — World Tour 2026** (Show | Curitiba)
+2. **Tame Impala — Live Experience** (Show | Salvador)
+3. **Avatar 3: Fogo e Cinzas** (Filme | São Paulo)
+4. **Interstellar — Edição Especial 10 Anos** (Filme | São Paulo)
+5. **The 1975 — Still... At Their Very Best Tour** (Show | São Paulo)
+
+O cliente de teste já possui ingressos de alguns desses eventos para testar a funcionalidade de validação na portaria.
+
 ### Deploy
 
 | Camada | Plataforma recomendada |

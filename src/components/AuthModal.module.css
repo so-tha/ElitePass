@@ -272,24 +272,3 @@
   color: var(--color-text-dim);
   letter-spacing: 0.3px;
 }
-
-.btnGoogle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 10px 0;
-  border-radius: 10px;
-  background: var(--color-bg-hover);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btnGoogle:hover {
-  background: var(--color-border);
-  border-color: var(--color-text-dim);
-}

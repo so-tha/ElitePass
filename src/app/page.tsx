@@ -333,6 +333,9 @@ export default function Home() {
 
   const renderEventCard = (event: TMEvent) => {
     const catInfo = getCategoryBadge(getCategory(event));
+    const charSum = event.id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const ticketsRemaining = 18 + (charSum % 80);
+
     return (
       <EventCard
         key={event.id}
@@ -345,6 +348,7 @@ export default function Home() {
         time={event.dates.start.localTime?.slice(0, 5)}
         venue={getVenue(event)}
         price={formatPrice(event)}
+        ticketsRemaining={ticketsRemaining}
         rating={4.8}
       />
     );
@@ -353,6 +357,8 @@ export default function Home() {
   const renderMovieCard = (movie: TMDBMovie) => {
     const genreName = movie.genre_ids?.[0] ? GENRE_MAP[movie.genre_ids[0]] ?? "Cinema" : "Cinema";
     const catInfo = getCategoryBadge(genreName);
+    const ticketsRemaining = 24 + (movie.id % 90);
+
     return (
       <EventCard
         key={movie.id}
@@ -364,7 +370,7 @@ export default function Home() {
         date={formatMovieDate(movie.release_date)}
         venue="Cinemark & UCI IMAX"
         price={formatMoviePrice(movie)}
-        ticketsRemaining={150}
+        ticketsRemaining={ticketsRemaining}
         rating={movie.vote_average ? Number((movie.vote_average / 2).toFixed(1)) : 4.5}
       />
     );

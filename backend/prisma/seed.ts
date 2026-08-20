@@ -23,22 +23,43 @@ async function main() {
     console.log(`Usando organizador existente: ${organizer.email} (${organizer.id})`);
   }
 
-  let clientUser = await prisma.user.findFirst({
-    where: { role: "CLIENT" },
+  let clientUser1 = await prisma.user.findFirst({
+    where: { email: "cliente1@elitepass.com" },
   });
 
-  if (!clientUser) {
+  if (!clientUser1) {
     const hashedPassword = await bcrypt.hash("123456", 10);
-    clientUser = await prisma.user.create({
+    clientUser1 = await prisma.user.create({
       data: {
-        name: "João Cliente",
-        email: "cliente@elitepass.com",
+        name: "João Silva",
+        email: "cliente1@elitepass.com",
         cpf: "111.222.333-44",
         password: hashedPassword,
         role: "CLIENT",
       },
     });
+    console.log(`✅ Cliente 1 criado: ${clientUser1.email}`);
   }
+
+  let clientUser2 = await prisma.user.findFirst({
+    where: { email: "cliente2@elitepass.com" },
+  });
+
+  if (!clientUser2) {
+    const hashedPassword = await bcrypt.hash("123456", 10);
+    clientUser2 = await prisma.user.create({
+      data: {
+        name: "Maria Santos",
+        email: "cliente2@elitepass.com",
+        cpf: "222.333.444-55",
+        password: hashedPassword,
+        role: "CLIENT",
+      },
+    });
+    console.log(`✅ Cliente 2 criado: ${clientUser2.email}`);
+  }
+
+  const clientUser = clientUser1;
 
   let doorman = await prisma.user.findFirst({
     where: { role: "DOORMAN" },
@@ -55,6 +76,15 @@ async function main() {
         role: "DOORMAN",
       },
     });
+  }
+
+  // O seed roda a cada start do container, então só cria os eventos uma vez —
+  // sem esta guarda cada restart duplicaria os 5 eventos e seus pedidos.
+  const existingEvents = await prisma.event.count();
+  if (existingEvents > 0) {
+    console.log(`Eventos já existem (${existingEvents}) — pulando criação.`);
+    console.log("Seed concluído com sucesso!");
+    return;
   }
 
   // 3. Criar os 5 Eventos (3 Shows e 2 Cinema)

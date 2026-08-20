@@ -37,4 +37,10 @@ echo "DATABASE_URL: ${DATABASE_URL:0:50}..."
 npx prisma migrate deploy
 
 echo "✓ Migrações concluídas"
+
+echo "Populando banco com dados de teste..."
+npx tsx prisma/seed.ts
+
+echo "✓ Seed concluído"
+echo "🎯 Iniciando servidor na porta 3001..."
 exec node dist/server.js

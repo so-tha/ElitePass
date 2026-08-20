@@ -122,10 +122,29 @@ const EventCard: React.FC<EventCardProps> = ({
 
         {/* Footer */}
         <div className={styles.cardFooter}>
-          <div className={styles.priceInfo}>
-            <span className={styles.priceLabel}>A partir de</span>
-            <span className={styles.priceValue}>{price}</span>
+          <div className={styles.priceAndSeatsGroup}>
+            <div className={styles.priceInfo}>
+              <span className={styles.priceLabel}>A partir de</span>
+              <span className={styles.priceValue}>{price}</span>
+            </div>
+
+            {ticketsRemaining != null && (
+              <div
+                className={`${styles.seatsBadge} ${
+                  ticketsRemaining < 30 ? styles.seatsBadgeLow : styles.seatsBadgeNormal
+                }`}
+                title={`${ticketsRemaining} assentos disponíveis`}
+              >
+                <TicketIcon size={12} />
+                <span>
+                  {ticketsRemaining < 30
+                    ? `Últimos ${ticketsRemaining}`
+                    : `${ticketsRemaining} assentos`}
+                </span>
+              </div>
+            )}
           </div>
+
           <button
             className={styles.ctaButton}
             onClick={(e) => {
