@@ -498,8 +498,54 @@ Este projeto está configurado para deploy em **three managed platforms** — ca
 - Ambas têm 100% de uptime (não são experimentais), apenas com limitações de recursos.
 
 ---
-### Comentarios
- - Coisas que ue poderia melhorar com toda certeza foi o front-end, principalmente no modo claro, mas como foquei bem no back-end o front não saiu da maneira que gostaria. A IA me ajudou demais em boa parte do codigo porém, teve alguns B.O's que eu tive que resolver sozinha como o final que envolvia o deploy, a configuração das tres plataformas diferentes que usei (Vercel pro front, Render pro Back e Neon para o bd), e também também foi uma luta para ela não deixar o front do jeito que ela queria e não do modo que eu almejava. Utilizei o color hunt para encontrar uma paleta de cores que fizesse sentido de inicio, tive problemas com a questão dos preços vindo da API do Ticketmaster como disse em uma seção acima e com eventos retornando com o tipo undefined. Enfim, eu poderia ter feito muito melhor, porém é o que eu consegui em 6 dias pois queria entregar um dia antes do limite.
+
+## 🤖 Uso de IA e Desenvolvimento Manual
+
+### Onde a IA (Claude) Ajudou
+
+A IA foi instrumental na **arquitetura inicial e prototipagem rápida** do projeto:
+
+- **Backend estrutura** — rotas REST, schemas Prisma, autenticação JWT e validações com Zod
+- **Frontend componentes** — AuthModal, Dashboard, card layouts e integrações com APIs externas (Ticketmaster, TMDB)
+- **Geração de código repetitivo** — CRUD handlers, migrations do banco, validações de entrada
+- **Design system** — paleta de cores (60-30-10) e guia visual implementado com CSS Modules
+
+**Proporção estimada:** ~70% do código inicial gerado ou sugerido pela IA.
+
+### Onde eu Resolvi Sozinha
+
+Os problemas mais críticos foram **identificados e corrigidos manualmente**, especialmente em áreas onde a IA gerou código problemático:
+
+1. **Deploy & Infraestrutura (ultimo dia — crítico)**
+   - Configuração de três plataformas (Vercel, Render, Neon) com variáveis de ambiente corretas
+   - Diagnóstico e correção do erro `DATABASE_URL` com barra duplicada causando 404 nos logins
+   - Implementação do script `start:render` com migrations e seed automáticos
+   - Solução para o problema de devDependencies faltando no build do Render (arquivo `.npmrc`)
+   - Fix do `vercel.json` que tinha array de env vars (formato inválido)
+
+2. **Problemas de Lint & Build**
+   - Correção de 13 erros de `react-hooks/set-state-in-effect` no frontend (usar `useSyncExternalStore`, moverem setState para IIFE, etc.)
+   - Implementação de `try/catch` no setInterval do backend para evitar crash por unhandled rejection
+   - Remoção de imports não usados e ajuste de tipos TypeScript
+
+3. **Integração de APIs Externas**
+   - Tratamento do problema **Ticketmaster sem preços** — implementação de gerador determinístico de preços simulados baseado em ID do evento
+   - Debug de eventos retornando `undefined` — validação de respostas das APIs
+   - Fallback de preços quando TMDB não retorna dados
+
+4. **Frontend Design & UX**
+   - Polimento visual do modo claro (resistência à IA que preferia dark-only)
+   - Ajustes de responsividade e acessibilidade (ARIA labels, contraste de cores)
+   - Criação do Footer (componente final que a IA não havia considerado)
+
+### Desafios Específicos
+
+- **Lint configuration:** O projeto herdou ESLint rules rígidas que flagravam padrões comuns da IA (setState em efeitos, qualquer tipo `any`). Tive que entender cada regra e fazer a arquitetura estar em conformidade.
+- **Next.js + Prisma + PostgreSQL:** A IA gerou código funcional mas com armadilhas (tsconfig.json incluindo `/backend` sem excluir, geração de client Prisma faltando no build). Descobri e corrigi manualmente.
+- **Decisões de design:** A IA tendia para layouts mais simples/minimalistas; tive que customizar para chegar na identidade visual 60-30-10 desejada.
+
+O **ElitePass não seria viável em 6 dias sem IA**, mas também **não estaria funcionando em produção sem debug/fix manual intenso**.
+
 ---
 
 <p align="center">
