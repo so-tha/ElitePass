@@ -2,27 +2,55 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import styles from "./Navbar.module.css";
-import { PlusIcon, TicketIcon, UserIcon, HeartIcon, GridIcon, LogOutIcon, SunIcon, MoonIcon, ScanIcon } from "./icons";
+import { PlusIcon, TicketIcon, UserIcon, HeartIcon, GridIcon, LogOutIcon, SunIcon, MoonIcon, ScanIcon, SearchIcon } from "./icons";
 import { AuthModal } from "./AuthModal";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { ConfirmModal } from "./ConfirmModal";
 
-export function Navbar() {
+interface NavbarProps {
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+}
+
+export function Navbar({ searchValue, onSearchChange }: NavbarProps = {}) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [localSearch, setLocalSearch] = useState("");
+
+  const isControlled = searchValue !== undefined && onSearchChange !== undefined;
+  const searchInputValue = isControlled ? searchValue : localSearch;
 
   const close = () => setOpen(false);
 
   const openAuth = (mode: "login" | "register" = "login") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
+    close();
+  };
+
+  const handleSearchChange = (value: string) => {
+    if (isControlled) {
+      onSearchChange!(value);
+    } else {
+      setLocalSearch(value);
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isControlled) {
+      const term = localSearch.trim();
+      router.push(term ? `/?search=${encodeURIComponent(term)}` : "/");
+    }
     close();
   };
 
@@ -34,6 +62,20 @@ export function Navbar() {
             <div className={styles.logoBadge}>EP</div>
             <span className={styles.logoText}>ElitePass</span>
           </Link>
+
+          <form className={styles.navSearchWrapper} onSubmit={handleSearchSubmit}>
+            <div className={styles.navSearch}>
+              <SearchIcon size={14} className={styles.navSearchIcon} />
+              <input
+                type="text"
+                className={styles.navSearchInput}
+                placeholder="Buscar eventos, filmes..."
+                value={searchInputValue}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+          </form>
 
           <div className={styles.navActions}>
             {user?.role === "ORGANIZER" && (
@@ -83,6 +125,20 @@ export function Navbar() {
         </div>
 
         <div className={`${styles.mobilePanel} ${open ? styles.mobilePanelOpen : ""}`}>
+          <form className={styles.mobileSearchForm} onSubmit={handleSearchSubmit}>
+            <div className={styles.navSearch}>
+              <SearchIcon size={14} className={styles.navSearchIcon} />
+              <input
+                type="text"
+                className={styles.navSearchInput}
+                placeholder="Buscar eventos, filmes..."
+                value={searchInputValue}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+          </form>
+
           {user?.role === "ORGANIZER" && (
             <Link href="/dashboard?tab=novo" className={styles.mobileLink} onClick={close}>
               Criar evento

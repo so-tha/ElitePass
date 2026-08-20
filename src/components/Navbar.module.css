@@ -57,6 +57,51 @@
   gap: 32px;
 }
 
+.navSearchWrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.navSearch {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 9px 16px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.navSearch:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
+}
+
+.navSearchIcon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.navSearchInput {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  font-family: var(--font-base);
+  color: var(--color-text);
+}
+
+.navSearchInput::placeholder {
+  color: var(--color-text-dim);
+}
+
 .navLink {
   font-size: 14px;
   font-weight: 500;
@@ -200,4 +245,19 @@
   .menuToggle {
     display: flex;
   }
+}
+
+@media (max-width: 640px) {
+  .navSearchWrapper {
+    display: none;
+  }
+}
+
+.mobileSearchForm {
+  padding: 10px 4px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mobileSearchForm .navSearch {
+  max-width: none;
 }

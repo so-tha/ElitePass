@@ -6,12 +6,12 @@ import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
 import EventCard from "@/components/EventCard";
 import {
-  SearchIcon,
-  XIcon,
   MapPinIcon,
   CalendarIcon,
   FilmIcon,
   AlertTriangleIcon,
+  TicketIcon,
+  PlayIcon,
 } from "@/components/icons";
 import {
   TMEvent,
@@ -343,6 +343,23 @@ export default function Home() {
     return { map, order };
   }, [filteredMovies]);
 
+  const heroStats = useMemo(() => {
+    const cities = new Set(
+      events
+        .map((e) => e._embedded?.venues?.[0]?.city?.name)
+        .filter((c): c is string => Boolean(c) && c !== "undefined")
+    );
+    const categories = new Set(events.map((e) => getCategoryGroupKey(getCategory(e))));
+    const moviesInTheaters = movies.filter(isMovieInTheaters).length;
+
+    return {
+      events: events.length,
+      movies: moviesInTheaters,
+      cities: cities.size,
+      categories: categories.size,
+    };
+  }, [events, movies]);
+
   const renderEventCard = (event: TMEvent) => {
     const catInfo = getCategoryBadge(getCategory(event));
     return (
@@ -384,38 +401,62 @@ export default function Home() {
 
   return (
     <div className={styles.root}>
-      <Navbar />
+      <Navbar searchValue={search} onSearchChange={setSearch} />
+
+      <section className={styles.hero}>
+        <div className={styles.heroGlow} />
+        <div className={styles.heroBeams} />
+        <div className={styles.heroContent}>
+          <div className={styles.heroEyebrow}>
+            <span className={styles.heroEyebrowLine} />
+            <span>Experiências Exclusivas</span>
+          </div>
+          <h1 className={styles.heroTitle}>
+            Sua Experiência
+            <br />
+            <span className={styles.heroTitleGold}>Premium</span>
+            <br />
+            Começa Aqui
+          </h1>
+          <p className={styles.heroSubtitle}>
+            Ingressos para os melhores filmes, shows, esportes e teatro do Brasil —
+            com exclusividade, zero fila e entrega imediata.
+          </p>
+
+          <div className={styles.heroActions}>
+            <a href="#programacao" className={styles.heroBtnPrimary}>
+              <TicketIcon size={15} />
+              Explorar Ingressos
+            </a>
+            <a href="#programacao" className={styles.heroBtnSecondary}>
+              <PlayIcon size={12} />
+              Ver Calendário
+            </a>
+          </div>
+
+          <div className={styles.heroStats}>
+            <div className={styles.heroStat}>
+              <span className={styles.heroStatValue}>{heroStats.events}</span>
+              <span className={styles.heroStatLabel}>Eventos Ativos</span>
+            </div>
+            <div className={styles.heroStat}>
+              <span className={styles.heroStatValue}>{heroStats.movies}</span>
+              <span className={styles.heroStatLabel}>Filmes em Cartaz</span>
+            </div>
+            <div className={styles.heroStat}>
+              <span className={styles.heroStatValue}>{heroStats.cities}</span>
+              <span className={styles.heroStatLabel}>Cidades</span>
+            </div>
+            <div className={styles.heroStat}>
+              <span className={styles.heroStatValue}>{heroStats.categories}</span>
+              <span className={styles.heroStatLabel}>Categorias</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <main className={styles.main}>
-        <section className={styles.searchSection}>
-          <h1 className={styles.searchHeading}>
-            Encontre seu próximo <span className={styles.highlight}>evento</span>
-          </h1>
-          <div className={styles.searchBar}>
-            <SearchIcon size={15} className={styles.searchIcon} />
-            <input
-              id="input-busca-main"
-              type="text"
-              className={styles.searchInput}
-              placeholder="Buscar eventos"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              autoComplete="off"
-            />
-            {search && (
-              <button
-                className={styles.searchClear}
-                id="btn-limpar-busca-main"
-                onClick={() => setSearch("")}
-                aria-label="Limpar busca"
-              >
-                <XIcon size={12} />
-              </button>
-            )}
-          </div>
-        </section>
-
-        <section className={styles.programSection}>
+        <section className={styles.programSection} id="programacao">
           <div className={styles.programEyebrow}>
             <span className={styles.programEyebrowLine} />
             <span>Programação</span>
