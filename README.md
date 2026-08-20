@@ -119,6 +119,7 @@ Reservado para **textos de leitura rápida**, labels de formulário e ícones si
 
 ### Ferramentas & Infra
 - 🐳 **Docker & Docker Compose** — Ambiente completo (frontend + backend + PostgreSQL) em containers
+- 🧪 **Vitest** — Testes unitários no frontend e no backend
 - **Git & GitHub** — Controle de versão e repositório remoto
 
 ---
@@ -299,6 +300,24 @@ npm run db:studio
 ```
 
 **Nota:** O backend valida automaticamente todas as env vars obrigatórias no startup (Zod schema). Se alguma estiver faltando, o servidor exibe mensagem clara e encerra, evitando falhas silenciosas em produção.
+
+### 🧪 Testes
+
+Testes unitários (Vitest) cobrem a lógica que não depende de banco de dados nem de serviços externos — o foco foi a lógica de segurança e as regras de negócio mais sensíveis:
+
+- **Backend**: assinatura/verificação HMAC do QR Code (`ticketCode.ts` — inclui casos de adulteração), geração/validação de JWT (`jwt.ts` — inclui separação entre segredo de access e refresh token), validação de tiers/preço (`eventTiers.ts` — preço e capacidade nunca podem ser zero/negativos)
+- **Frontend**: utilitários de formatação de data/preço/local do catálogo externo (`ticketmaster.ts` — inclui o caso de fuso horário ao parsear datas, e o fallback de preço simulado quando a API não retorna `priceRanges`)
+
+```bash
+# Backend
+cd backend
+npm test
+
+# Frontend (raiz do projeto)
+npm test
+```
+
+Não há testes de integração com banco de dados real nem testes de UI/E2E — o fluxo completo (compra → QR Code → validação na portaria) foi validado manualmente ponta a ponta, não por testes automatizados.
 
 ### 🐳 Rodar com Docker (Recomendado)
 
