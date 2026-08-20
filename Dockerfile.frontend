@@ -1,0 +1,41 @@
+# Stage 1: Build
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Accept build arguments for environment variables
+# BACKEND_URL precisa existir no build: o Next.js resolve os rewrites de
+# next.config.ts em build-time e os grava em .next/routes-manifest.json.
+ARG BACKEND_URL
+ARG NEXT_PUBLIC_BACKEND_URL
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ARG TICKETMASTER_API_KEY
+ARG TMDB_READ_ACCESS_TOKEN
+
+# Set them as environment variables for the build
+ENV BACKEND_URL=${BACKEND_URL}
+ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+ENV TICKETMASTER_API_KEY=${TICKETMASTER_API_KEY}
+ENV TMDB_READ_ACCESS_TOKEN=${TMDB_READ_ACCESS_TOKEN}
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+# Stage 2: Runtime
+FROM node:20-alpine
+WORKDIR /app
+
+RUN npm install -g next
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

@@ -1,0 +1,86 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: elitepass-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-elitepass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-elitepass}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - elitepass-network
+
+  # Backend Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: elitepass-backend
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-elitepass}?schema=public
+      FRONTEND_URL: http://frontend:3000
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-your-jwt-access-secret-key-32-chars-min}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-jwt-refresh-secret-key-32-chars-min}
+      TICKET_HMAC_SECRET: ${TICKET_HMAC_SECRET:-your-ticket-hmac-secret-key-32-chars-min}
+      TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_dummy_key_for_docker_development}
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - elitepass-network
+    restart: unless-stopped
+
+  # Frontend Server
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        BACKEND_URL: http://backend:3001
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://backend:3001}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+        TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
+        TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN:-}
+    container_name: elitepass-frontend
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      BACKEND_URL: http://backend:3001
+      NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://backend:3001}
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+      TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
+      TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN:-}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    networks:
+      - elitepass-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  elitepass-network:
+    driver: bridge

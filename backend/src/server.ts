@@ -22,6 +22,11 @@ const SEAT_HOLD_SWEEP_INTERVAL_MS = 30_000;
 
 const app = express();
 
+// Necessário porque o Next.js faz proxy (rewrites) das rotas /api/auth/*
+// para este servidor, adicionando o header X-Forwarded-For. Sem isso,
+// o express-rate-limit rejeita a requisição por não confiar no proxy.
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(
   cors({

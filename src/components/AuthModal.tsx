@@ -232,8 +232,8 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
             {loading
               ? "Aguarde..."
               : mode === "login"
-              ? "Entrar na Conta"
-              : "Criar Minha Conta"}
+                ? "Entrar na Conta"
+                : "Criar Minha Conta"}
           </button>
         </form>
 

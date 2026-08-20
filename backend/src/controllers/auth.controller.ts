@@ -5,18 +5,23 @@ import { prisma } from "../prisma";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
 import { AuthenticatedRequest } from "../middlewares/requireAuth";
 
+// ─── Schemas de validação ─────────────────────────────────────
+
 const registerSchema = z.object({
-  name:     z.string().min(3, "Nome deve ter ao menos 3 caracteres"),
-  email:    z.string().email("E-mail inválido"),
-  cpf:      z.string().regex(/^\d{11}$/, "CPF deve ter 11 dígitos (sem pontuação)"),
+  name: z.string().min(3, "Nome deve ter ao menos 3 caracteres"),
+  email: z.string().email("E-mail inválido"),
+  cpf: z.string().regex(/^\d{11}$/, "CPF deve ter 11 dígitos (sem pontuação)"),
   password: z.string().min(8, "Senha deve ter ao menos 8 caracteres"),
 });
 
 const loginSchema = z.object({
-  email:    z.string().email(),
+  email: z.string().email(),
   password: z.string().min(1),
 });
 
+// ─── Controllers ──────────────────────────────────────────────
+
+/** POST /auth/register */
 export async function register(req: Request, res: Response): Promise<void> {
   const parse = registerSchema.safeParse(req.body);
   if (!parse.success) {
@@ -40,7 +45,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     select: { id: true, name: true, email: true, role: true },
   });
 
-  const accessToken  = signAccessToken({ userId: user.id, role: user.role });
+  const accessToken = signAccessToken({ userId: user.id, role: user.role });
   const refreshToken = signRefreshToken({ userId: user.id, role: user.role });
 
   res
@@ -48,7 +53,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
     })
     .status(201)
     .json({ user, accessToken });
@@ -70,7 +75,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const accessToken  = signAccessToken({ userId: user.id, role: user.role });
+  const accessToken = signAccessToken({ userId: user.id, role: user.role });
   const refreshToken = signRefreshToken({ userId: user.id, role: user.role });
 
   res
@@ -95,7 +100,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const payload    = verifyRefreshToken(token);
+    const payload = verifyRefreshToken(token);
     const accessToken = signAccessToken({ userId: payload.userId, role: payload.role });
     res.json({ accessToken });
   } catch {
@@ -124,4 +129,3 @@ export async function getMe(req: Request, res: Response): Promise<void> {
 
   res.json({ user });
 }
-
