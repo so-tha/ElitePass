@@ -240,12 +240,6 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                 : "Criar Minha Conta"}
           </button>
         </form>
-
-        <div className={styles.divider}>
-          <div className={styles.dividerLine} />
-          <span className={styles.dividerText}>ou continuar com</span>
-          <div className={styles.dividerLine} />
-        </div>
       </div>
     </div>
   );
