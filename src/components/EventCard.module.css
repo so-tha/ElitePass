@@ -2,13 +2,13 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
+  background: linear-gradient(180deg, #0e0f13 0%, #0f1116 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .cardContainer::before {
@@ -25,7 +25,7 @@
 .cardContainer:hover {
   transform: translateY(-4px);
   border-color: var(--color-primary);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 178, 44, 0.2);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 178, 44, 0.22);
 }
 
 /* ─────────────────────────────────────────────────────────────────── */

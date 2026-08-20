@@ -447,10 +447,6 @@ export default function Home() {
               <TicketIcon size={15} />
               Explorar Ingressos
             </a>
-            <a href="#programacao" className={styles.heroBtnSecondary}>
-              <PlayIcon size={12} />
-              Ver Calendário
-            </a>
           </div>
 
           <div className={styles.heroStats}>

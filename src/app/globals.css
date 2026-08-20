@@ -6,12 +6,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  /* Dark Mode (Padrão) */
-  --color-bg:          #0b0c10;
-  --color-bg-surface:  #12141c;
-  --color-bg-card:     #161922;
-  --color-bg-hover:    #1c202c;
-  --color-border:      rgba(255, 255, 255, 0.08);
+  /* Dark Mode (Padrão — Preto Elevado Elegante) */
+  --color-bg:          #090a0d;
+  --color-bg-surface:  #101116;
+  --color-bg-card:     #15171e;
+  --color-bg-hover:    #1b1d26;
+  --color-border:      rgba(255, 255, 255, 0.10);
 
   /* 30% — Dourado/Âmbar */
   --color-primary:     #FFB22C;
