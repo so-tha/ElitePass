@@ -220,6 +220,11 @@ export default function Home() {
   const [moviesLoading, setMoviesLoading] = useState(true);
   const [moviesError, setMoviesError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("search");
+    if (q) setSearch(q);
+  }, []);
+
   const fetchMovies = useCallback(async (keyword = "") => {
     setMoviesLoading(true);
     setMoviesError(null);
@@ -365,6 +370,58 @@ export default function Home() {
     );
   };
 
+  const resultsContent = loading || moviesLoading ? (
+    <div className={styles.showsGrid}>
+      {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
+    </div>
+  ) : displayResults.length === 0 ? (
+    <p className={styles.noResults}>
+      {search
+        ? `Nenhum resultado encontrado para "${search}".`
+        : "Nenhum evento encontrado."}
+    </p>
+  ) : (
+    <div className={styles.showsGrid}>
+      {displayResults.map((item) =>
+        item.type === "event"
+          ? renderEventCard(item.data as TMEvent)
+          : renderMovieCard(item.data as TMDBMovie)
+      )}
+    </div>
+  );
+
+  const errorBanner = (error || moviesError) && (
+    <div className={styles.errorBanner}>
+      <AlertTriangleIcon size={14} />
+      {error || moviesError}
+    </div>
+  );
+
+  if (search) {
+    return (
+      <div className={styles.root}>
+        <Navbar searchValue={search} onSearchChange={setSearch} />
+
+        <main className={styles.main}>
+          <section id="resultados" className={styles.showsSection}>
+            <div className={styles.searchResultsHeader}>
+              <h2 className={styles.searchResultsTitle}>Resultado da pesquisa</h2>
+              <p className={styles.searchResultsMeta}>
+                {loading || moviesLoading
+                  ? "Buscando..."
+                  : `${displayResults.length} resultado${displayResults.length === 1 ? "" : "s"} para "${search}"`}
+              </p>
+            </div>
+
+            {errorBanner}
+
+            {resultsContent}
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.root}>
       <Navbar searchValue={search} onSearchChange={setSearch} />
@@ -439,33 +496,10 @@ export default function Home() {
           </div>
         </section>
 
-        {(error || moviesError) && (
-          <div className={styles.errorBanner}>
-            <AlertTriangleIcon size={14} />
-            {error || moviesError}
-          </div>
-        )}
+        {errorBanner}
 
         <section id="resultados" className={styles.showsSection}>
-          {loading || moviesLoading ? (
-            <div className={styles.showsGrid}>
-              {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
-            </div>
-          ) : displayResults.length === 0 ? (
-            <p className={styles.noResults}>
-              {search
-                ? `Nenhum resultado encontrado para "${search}".`
-                : "Nenhum evento encontrado."}
-            </p>
-          ) : (
-            <div className={styles.showsGrid}>
-              {displayResults.map((item) =>
-                item.type === "event"
-                  ? renderEventCard(item.data as TMEvent)
-                  : renderMovieCard(item.data as TMDBMovie)
-              )}
-            </div>
-          )}
+          {resultsContent}
         </section>
       </main>
     </div>

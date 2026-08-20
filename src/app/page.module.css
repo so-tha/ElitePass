@@ -513,6 +513,26 @@
   width: 100%;
 }
 
+.searchResultsHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+}
+
+.searchResultsTitle {
+  font-family: var(--font-serif-stack);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.searchResultsMeta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
 .noResults {
   display: flex;
   align-items: center;
