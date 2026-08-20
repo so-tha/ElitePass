@@ -56,8 +56,13 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
+        # BACKEND_URL é resolvido no servidor Next.js (dentro do container),
+        # então usa o hostname interno do Docker.
         BACKEND_URL: http://backend:3001
-        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://backend:3001}
+        # NEXT_PUBLIC_BACKEND_URL é lido pelo NAVEGADOR do usuário (fora do
+        # Docker), então precisa de um endereço alcançável a partir do host —
+        # nunca o hostname interno "backend".
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3001}
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
         TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
         TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN:-}
@@ -65,7 +70,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       BACKEND_URL: http://backend:3001
-      NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://backend:3001}
+      NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3001}
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
       TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
       TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN:-}
