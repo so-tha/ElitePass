@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Bebas_Neue, Playfair_Display } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
+import { Footer } from "@/components/Footer";
 import "./globals.css";
 
 const inter = Inter({
@@ -39,9 +40,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${bebasNeue.variable} ${playfairDisplay.variable}`}>
-      <body>
+      <body style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <div style={{ flex: 1 }}>{children}</div>
+            <Footer />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

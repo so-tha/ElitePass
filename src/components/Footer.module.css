@@ -1,0 +1,175 @@
+.footer {
+  background: #000;
+  border-top: 1px solid #333;
+  padding: 3rem 1rem 2rem;
+  margin-top: auto;
+  color: #f7f7f7;
+  font-size: 0.875rem;
+}
+
+[data-theme="light"] .footer {
+  background: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+  color: #333;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 3rem 2rem;
+  margin-bottom: 2rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffb22c;
+  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+[data-theme="light"] .heading {
+  color: #854836;
+}
+
+.description {
+  margin: 0;
+  color: inherit;
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
+.subheading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffb22c;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+[data-theme="light"] .subheading {
+  color: #854836;
+}
+
+.links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.links a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  opacity: 0.8;
+}
+
+.links a:hover {
+  color: #ffb22c;
+  opacity: 1;
+}
+
+[data-theme="light"] .links a:hover {
+  color: #854836;
+}
+
+.socials {
+  display: flex;
+  gap: 1rem;
+}
+
+.socials a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  color: #ffb22c;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 1.2rem;
+}
+
+[data-theme="light"] .socials a {
+  background: #e0e0e0;
+  color: #854836;
+}
+
+.socials a:hover {
+  background: #ffb22c;
+  color: #000;
+  transform: translateY(-2px);
+}
+
+[data-theme="light"] .socials a:hover {
+  background: #854836;
+  color: #f5f5f5;
+}
+
+.divider {
+  height: 1px;
+  background: #333;
+  margin: 1.5rem 0;
+}
+
+[data-theme="light"] .divider {
+  background: #ddd;
+}
+
+.bottom {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.copyright {
+  margin: 0;
+}
+
+.credit {
+  margin: 0;
+}
+
+.credit strong {
+  color: #ffb22c;
+  font-weight: 600;
+}
+
+[data-theme="light"] .credit strong {
+  color: #854836;
+}
+
+@media (max-width: 640px) {
+  .footer {
+    padding: 2rem 1rem 1.5rem;
+  }
+
+  .content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .bottom {
+    font-size: 0.75rem;
+  }
+}
