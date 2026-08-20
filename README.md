@@ -1,6 +1,6 @@
 # 🎟️ ElitePass
 
-> Plataforma de ingressos premium para shows e eventos — rápida, segura e com a identidade visual dos grandes eventos.
+> Plataforma de ingressos para shows e eventos — rápida, segura e com a identidade visual dos grandes eventos.
 
 ---
 

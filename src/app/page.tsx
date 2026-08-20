@@ -1,14 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import { Navbar } from "@/components/Navbar";
 import EventCard from "@/components/EventCard";
 import {
-  MapPinIcon,
-  CalendarIcon,
-  FilmIcon,
   AlertTriangleIcon,
   TicketIcon,
   PlayIcon,
@@ -56,15 +52,6 @@ const PROGRAM_FILTERS = [
 ];
 
 type CategoryGroupKey = "SHOWS" | "TEATRO" | "COMEDIA" | "PALESTRA" | "CINEMA" | "OTHER";
-
-const CATEGORY_GROUPS: { key: CategoryGroupKey; title: string }[] = [
-  { key: "SHOWS", title: "Shows & Festivais" },
-  { key: "TEATRO", title: "Teatro & Dança" },
-  { key: "COMEDIA", title: "Comédia & Stand-up" },
-  { key: "PALESTRA", title: "Palestras & Cursos" },
-  { key: "CINEMA", title: "Cinema & Mostras" },
-  { key: "OTHER", title: "Outros Eventos" },
-];
 
 function getCategoryGroupKey(categoryStr: string): CategoryGroupKey {
   const cat = categoryStr.toUpperCase();
@@ -220,7 +207,6 @@ function sortSearchResults(list: SearchResultItem[], sortLabel: string): SearchR
 }
 
 export default function Home() {
-  const router = useRouter();
   const [events, setEvents] = useState<TMEvent[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -313,35 +299,15 @@ export default function Home() {
     return sortMovieList(filtered, selectedSort);
   }, [movies, selectedDate, selectedSort, showMoviesSection]);
 
-  const searchResults = useMemo<SearchResultItem[]>(() => {
+  const displayResults = useMemo<SearchResultItem[]>(() => {
     const eventItems: SearchResultItem[] = filteredEvents.map((e) => ({ type: "event", data: e }));
     const movieItems: SearchResultItem[] = filteredMovies.map((m) => ({ type: "movie", data: m }));
-    return sortSearchResults([...eventItems, ...movieItems], selectedSort);
-  }, [filteredEvents, filteredMovies, selectedSort]);
-
-  const eventsByGroup = useMemo(() => {
-    const map = new Map<CategoryGroupKey, TMEvent[]>();
-    for (const event of filteredEvents) {
-      const key = getCategoryGroupKey(getCategory(event));
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(event);
+    const combined = sortSearchResults([...eventItems, ...movieItems], selectedSort);
+    if (!search && selectedType === "Todos") {
+      return combined.slice(0, 20);
     }
-    return map;
-  }, [filteredEvents]);
-
-  const moviesByGenre = useMemo(() => {
-    const map = new Map<string, TMDBMovie[]>();
-    const order: string[] = [];
-    for (const movie of filteredMovies) {
-      const genreName = movie.genre_ids?.[0] ? GENRE_MAP[movie.genre_ids[0]] ?? "Outros" : "Outros";
-      if (!map.has(genreName)) {
-        map.set(genreName, []);
-        order.push(genreName);
-      }
-      map.get(genreName)!.push(movie);
-    }
-    return { map, order };
-  }, [filteredMovies]);
+    return combined;
+  }, [filteredEvents, filteredMovies, selectedSort, search, selectedType]);
 
   const heroStats = useMemo(() => {
     const cities = new Set(
@@ -418,10 +384,6 @@ export default function Home() {
             <br />
             Começa Aqui
           </h1>
-          <p className={styles.heroSubtitle}>
-            Ingressos para os melhores filmes, shows, esportes e teatro do Brasil —
-            com exclusividade, zero fila e entrega imediata.
-          </p>
 
           <div className={styles.heroActions}>
             <a href="#programacao" className={styles.heroBtnPrimary}>
@@ -477,120 +439,34 @@ export default function Home() {
           </div>
         </section>
 
-        {error && (
+        {(error || moviesError) && (
           <div className={styles.errorBanner}>
             <AlertTriangleIcon size={14} />
-            {error}
+            {error || moviesError}
           </div>
         )}
 
-        {search ? (
-          <section id="resultados-busca" className={styles.showsSection}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Resultado da pesquisa</h2>
-              {(loading || moviesLoading) && <span className={styles.loadingDot}>Buscando...</span>}
-            </div>
-
-            {!loading && !moviesLoading && searchResults.length === 0 ? (
-              <p className={styles.noResults}>Nenhum resultado encontrado para &quot;{search}&quot;.</p>
-            ) : (
-              <div className={styles.showsGrid}>
-                {loading || moviesLoading
-                  ? Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)
-                  : searchResults.map((item) =>
-                      item.type === "event"
-                        ? renderEventCard(item.data as TMEvent)
-                        : renderMovieCard(item.data as TMDBMovie)
-                    )}
-              </div>
-            )}
-          </section>
-        ) : (
-          <>
-        {!error && loading && (
-          <section id="shows" className={styles.showsSection}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Shows e Eventos</h2>
-              <span className={styles.loadingDot}>Buscando...</span>
-            </div>
+        <section id="resultados" className={styles.showsSection}>
+          {loading || moviesLoading ? (
             <div className={styles.showsGrid}>
-              {Array.from({ length: 9 }).map((_, i) => <CardSkeleton key={i} />)}
+              {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
-          </section>
-        )}
-
-        {!error && !loading && filteredEvents.length === 0 && (
-          <section id="shows" className={styles.showsSection}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Shows e Eventos</h2>
-            </div>
-            <p className={styles.noResults}>Nenhum show encontrado para essa busca.</p>
-          </section>
-        )}
-
-        {!error && !loading &&
-          CATEGORY_GROUPS.map((group) => {
-            const groupEvents = eventsByGroup.get(group.key) ?? [];
-            if (groupEvents.length === 0) return null;
-            return (
-              <section key={group.key} id={`shows-${group.key.toLowerCase()}`} className={styles.showsSection}>
-                <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>{group.title}</h2>
-                </div>
-                <div className={styles.showsGrid}>
-                  {groupEvents.slice(0, 9).map((event) => renderEventCard(event))}
-                </div>
-              </section>
-            );
-          })}
-
-        {showMoviesSection && moviesError && (
-          <section id="filmes" className={styles.showsSection}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Filmes</h2>
-            </div>
-            <p className={styles.noResults}><AlertTriangleIcon size={13} /> {moviesError}</p>
-          </section>
-        )}
-
-        {showMoviesSection && !moviesError && moviesLoading && (
-          <section id="filmes" className={styles.showsSection}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Filmes</h2>
-              <span className={styles.loadingDot}>Carregando...</span>
-            </div>
+          ) : displayResults.length === 0 ? (
+            <p className={styles.noResults}>
+              {search
+                ? `Nenhum resultado encontrado para "${search}".`
+                : "Nenhum evento encontrado."}
+            </p>
+          ) : (
             <div className={styles.showsGrid}>
-              {Array.from({ length: 9 }).map((_, i) => <CardSkeleton key={i} />)}
+              {displayResults.map((item) =>
+                item.type === "event"
+                  ? renderEventCard(item.data as TMEvent)
+                  : renderMovieCard(item.data as TMDBMovie)
+              )}
             </div>
-          </section>
-        )}
-
-        {showMoviesSection && !moviesError && !moviesLoading && filteredMovies.length === 0 && (
-          <section id="filmes" className={styles.showsSection}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Filmes</h2>
-            </div>
-            <p className={styles.noResults}>Nenhum filme encontrado.</p>
-          </section>
-        )}
-
-        {showMoviesSection && !moviesError && !moviesLoading &&
-          moviesByGenre.order.map((genreName) => {
-            const genreMovies = moviesByGenre.map.get(genreName) ?? [];
-            if (genreMovies.length === 0) return null;
-            return (
-              <section key={genreName} id={`filmes-${genreName.toLowerCase()}`} className={styles.showsSection}>
-                <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>Filmes — {genreName}</h2>
-                </div>
-                <div className={styles.showsGrid}>
-                  {genreMovies.slice(0, 9).map((movie) => renderMovieCard(movie))}
-                </div>
-              </section>
-            );
-          })}
-          </>
-        )}
+          )}
+        </section>
       </main>
     </div>
   );
