@@ -28,15 +28,15 @@ O **ElitePass** é uma plataforma de compra e gestão de ingressos para shows e 
 - [x] Cancelamento de ingresso com devolução ao estoque e estorno na Stripe
 
 ### Frontend (organizador)
-- [x] Dashboard de criação e gestão de eventos (em progresso)
+- [x] Dashboard de criação e gestão de eventos
 - [x] Integração com API externa de shows/catálogo
-- [ ] Controle de capacidade e vendas em tempo real (em progresso)
+- [x] Controle de capacidade e vendas em tempo real (em progresso)
 
 ### Frontend (portaria)
 - [x] Leitor de QR Code (câmera) e digitação manual do código para validação de ingresso na entrada
 - [x] Retorno de status: válido, inválido, já utilizado ou evento errado
 
-### Backend (API Node.js) — 📋 [Veja o ROADMAP Backend](./backend/ROADMAP.md)
+### Backend (API Node.js)
 - [x] Autenticação JWT com três perfis (cliente, organizador, portaria)
 - [x] CRUD de eventos e setores/tiers (Organizador)
 - [x] Integração/Proxy com API externa de catálogo de shows (Ticketmaster) e filmes (TMDB)
@@ -114,9 +114,12 @@ Reservado para **textos de leitura rápida**, labels de formulário e ícones si
 - 🐘 **PostgreSQL** — Banco de dados relacional com suporte a transações ACID (essencial para pagamentos e overselling prevention)
 - 🔷 **Prisma ORM v7** — Interface elegante com driver adapter (`@prisma/adapter-pg`), migrations e Prisma Studio
 
+### Pagamentos
+- 💳 **Stripe** (`stripe`, `@stripe/react-stripe-js`, `@stripe/stripe-js`) — Payment Intents para checkout, com estorno automático em cancelamentos
+
 ### Ferramentas & Infra
+- 🐳 **Docker & Docker Compose** — Ambiente completo (frontend + backend + PostgreSQL) em containers
 - **Git & GitHub** — Controle de versão e repositório remoto
-- Pagamentos: *(a definir)*
 
 ---
 
@@ -165,6 +168,23 @@ Quando um cliente cancela um ingresso individual de um pedido com múltiplos ing
 **Motivo:** A receita hoje é rastreada por pedido (campo único `Order.totalAmount`), não por ingresso. Um ajuste completo exigiria desnormalizar valores por ingresso, com migração de dados históricos.
 
 **Impacto:** Se um organizador vendeu 100 ingressos por R$ 1.000 cada (R$ 100.000 de receita), e 10 clientes cancelarem 1 ingresso cada, o painel ainda exibirá R$ 100.000 de receita (não R$ 90.000), enquanto o `soldCount`/ocupação estarão corretos. Os estornos na Stripe refletem corretamente os cancelamentos.
+
+### Avisos inofensivos no console do navegador
+
+Ao abrir a aplicação, o console do navegador pode exibir:
+```
+⚠️ TICKETMASTER_API_KEY não definida no .env.local
+⚠️ TMDB_READ_ACCESS_TOKEN não definido no .env.local
+```
+Isso acontece porque `src/lib/ticketmaster.ts` e `src/lib/tmdb.ts` são importados (por seus tipos/helpers) em um componente client, então o bundler do Next.js empacota o arquivo inteiro — incluindo esse `console.warn` de nível de módulo — no bundle do navegador. As chamadas reais às APIs externas continuam acontecendo no servidor (rotas `/api/movies` e `/api/events`), onde as chaves estão corretamente configuradas. **Não afeta o funcionamento da aplicação.**
+
+### Rodando com Docker: variáveis `NEXT_PUBLIC_*` exigem rebuild
+
+O Next.js "grava" as variáveis `NEXT_PUBLIC_*` e os `rewrites()` de `next.config.ts` dentro dos arquivos estáticos durante `next build` — elas não são lidas novamente em runtime. Isso significa que, se você alterar `.env` (ex: trocar `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` ou `NEXT_PUBLIC_BACKEND_URL`), um `docker-compose restart frontend` **não é suficiente**: é necessário reconstruir a imagem:
+```bash
+docker-compose up --build -d
+```
+Variáveis do backend (sem o prefixo `NEXT_PUBLIC_`, como `STRIPE_SECRET_KEY` e `DATABASE_URL`) são lidas em runtime e só precisam de `docker-compose restart backend`.
 
 ---
 
@@ -267,11 +287,14 @@ npm install
 # 3. Aplique as migrations no banco
 npm run db:migrate
 
-# 4. Inicie o servidor (modo desenvolvimento com reload automático)
+# 4. Popule o banco com usuários e eventos de teste (veja credenciais abaixo)
+npm run db:seed
+
+# 5. Inicie o servidor (modo desenvolvimento com reload automático)
 npm run dev
 # Acesse: http://localhost:3001
 
-# 5. (opcional) Abra o Prisma Studio para visualizar dados
+# 6. (opcional) Abra o Prisma Studio para visualizar dados
 npm run db:studio
 ```
 
@@ -305,12 +328,20 @@ Documentação completa: veja [DOCKER.md](./DOCKER.md)
 
 O banco de dados é populado automaticamente com usuários de teste e eventos de exemplo. Use essas credenciais para testar cada perfil:
 
-#### 👤 Cliente (Comprador de Ingressos)
+#### 👤 Cliente 1 (Comprador de Ingressos — já com ingressos comprados)
 ```
-E-mail: cliente@elitepass.com
+E-mail: cliente1@elitepass.com
 Senha: 123456
 CPF:   111.222.333-44
 Função: Buscar, comprar e gerenciar ingressos
+```
+
+#### 👤 Cliente 2 (Comprador de Ingressos — conta "zerada")
+```
+E-mail: cliente2@elitepass.com
+Senha: 123456
+CPF:   222.333.444-55
+Função: Testar o fluxo de compra do zero (sem ingressos pré-carregados)
 ```
 
 #### 👔 Organizador (Criador de Eventos)
@@ -339,7 +370,7 @@ A seed do banco cria automaticamente 5 eventos de teste:
 4. **Interstellar — Edição Especial 10 Anos** (Filme | São Paulo)
 5. **The 1975 — Still... At Their Very Best Tour** (Show | São Paulo)
 
-O cliente de teste já possui ingressos de alguns desses eventos para testar a funcionalidade de validação na portaria.
+O **cliente1@elitepass.com** já possui ingressos de alguns desses eventos (úteis para testar a validação na portaria e o cancelamento). O **cliente2@elitepass.com** entra sem nenhum ingresso, ideal para testar o fluxo de compra do zero.
 
 ### Deploy
 
@@ -350,10 +381,6 @@ O cliente de teste já possui ingressos de alguns desses eventos para testar a f
 | **Banco de dados** | Supabase (PostgreSQL gerenciado) |
 
 ---
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](./LICENSE) para mais detalhes.
 
 ---
 
