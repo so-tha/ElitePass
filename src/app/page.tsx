@@ -12,7 +12,6 @@ import {
   CalendarIcon,
   FilmIcon,
   AlertTriangleIcon,
-  ChevronDownIcon,
 } from "@/components/icons";
 import {
   TMEvent,
@@ -48,25 +47,12 @@ function CardSkeleton() {
   );
 }
 
-const TYPE_OPTIONS = [
-  { label: "Todos", desc: "Todos os tipos de eventos" },
-  { label: "Shows & Festivais", desc: "Música ao vivo e festivais" },
-  { label: "Teatro & Dança", desc: "Apresentações teatrais e de dança" },
-  { label: "Comédia & Stand-up", desc: "Comediantes e shows de humor" },
-  { label: "Cinema & Mostras", desc: "Filmes e mostras de cinema" },
-];
-
-const DATE_OPTIONS = [
-  { label: "Todas as Datas", desc: "Qualquer data" },
-  { label: "Hoje", desc: "Eventos de hoje" },
-  { label: "Este Fim de Semana", desc: "Sábado e domingo" },
-  { label: "Próximos 30 Dias", desc: "Próximo mês" },
-];
-
-const SORT_OPTIONS = [
-  { label: "Mais Recente", desc: "Eventos mais próximos" },
-  { label: "Menor Preço", desc: "Ingressos mais baratos" },
-  { label: "Maior Preço", desc: "Ingressos mais caros" },
+const PROGRAM_FILTERS = [
+  { label: "Todos", value: "Todos" },
+  { label: "Shows", value: "Shows & Festivais" },
+  { label: "Teatro", value: "Teatro & Dança" },
+  { label: "Comédia", value: "Comédia & Stand-up" },
+  { label: "Filmes", value: "Cinema & Mostras" },
 ];
 
 type CategoryGroupKey = "SHOWS" | "TEATRO" | "COMEDIA" | "PALESTRA" | "CINEMA" | "OTHER";
@@ -241,10 +227,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedType, setSelectedType] = useState("Todos");
-  const [selectedDate, setSelectedDate] = useState("Todas as Datas");
-  const [selectedSort, setSelectedSort] = useState("Mais Recente");
-
-  const [openDropdown, setOpenDropdown] = useState<"type" | "date" | "sort" | null>(null);
+  const selectedDate = "Todas as Datas";
+  const selectedSort = "Mais Recente";
 
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [moviesLoading, setMoviesLoading] = useState(true);
@@ -429,121 +413,26 @@ export default function Home() {
               </button>
             )}
           </div>
+        </section>
 
-          <div className={styles.filterBar}>
-            {/* Filter 1: Tipos */}
-            <div className={styles.filterBoxContainer}>
+        <section className={styles.programSection}>
+          <div className={styles.programEyebrow}>
+            <span className={styles.programEyebrowLine} />
+            <span>Programação</span>
+          </div>
+          <h2 className={styles.programTitle}>O Que Está Acontecendo</h2>
+
+          <div className={styles.programPills}>
+            {PROGRAM_FILTERS.map((opt) => (
               <button
+                key={opt.value}
                 type="button"
-                className={`${styles.filterBox} ${openDropdown === "type" ? styles.filterBoxActive : ""}`}
-                onClick={() => setOpenDropdown(openDropdown === "type" ? null : "type")}
+                className={`${styles.pillButton} ${selectedType === opt.value ? styles.pillButtonActive : ""}`}
+                onClick={() => setSelectedType(opt.value)}
               >
-                <div className={styles.filterBoxTextGroup}>
-                  <span className={styles.filterBoxTitle}>{selectedType}</span>
-                  <span className={styles.filterBoxDesc}>
-                    {TYPE_OPTIONS.find((t) => t.label === selectedType)?.desc ?? "Shows, Festivais, Teatro, Comédia, Cinema, Etc."}
-                  </span>
-                </div>
-                <ChevronDownIcon size={16} className={styles.filterChevron} />
+                {opt.label}
               </button>
-
-              {openDropdown === "type" && (
-                <>
-                  <div className={styles.dropdownBackdrop} onClick={() => setOpenDropdown(null)} />
-                  <div className={styles.dropdownMenu}>
-                    {TYPE_OPTIONS.map((opt) => (
-                      <div
-                        key={opt.label}
-                        className={`${styles.dropdownItem} ${selectedType === opt.label ? styles.dropdownItemActive : ""}`}
-                        onClick={() => {
-                          setSelectedType(opt.label);
-                          setOpenDropdown(null);
-                        }}
-                      >
-                        <span className={styles.dropdownItemLabel}>{opt.label}</span>
-                        <span className={styles.dropdownItemDesc}>{opt.desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Filter 2: Datas */}
-            <div className={styles.filterBoxContainer}>
-              <button
-                type="button"
-                className={`${styles.filterBox} ${openDropdown === "date" ? styles.filterBoxActive : ""}`}
-                onClick={() => setOpenDropdown(openDropdown === "date" ? null : "date")}
-              >
-                <div className={styles.filterBoxTextGroup}>
-                  <span className={styles.filterBoxTitle}>{selectedDate}</span>
-                  <span className={styles.filterBoxDesc}>
-                    {DATE_OPTIONS.find((d) => d.label === selectedDate)?.desc ?? "Hoje, Este Fim de Semana, Próximos 30 Dias, Etc."}
-                  </span>
-                </div>
-                <ChevronDownIcon size={16} className={styles.filterChevron} />
-              </button>
-
-              {openDropdown === "date" && (
-                <>
-                  <div className={styles.dropdownBackdrop} onClick={() => setOpenDropdown(null)} />
-                  <div className={styles.dropdownMenu}>
-                    {DATE_OPTIONS.map((opt) => (
-                      <div
-                        key={opt.label}
-                        className={`${styles.dropdownItem} ${selectedDate === opt.label ? styles.dropdownItemActive : ""}`}
-                        onClick={() => {
-                          setSelectedDate(opt.label);
-                          setOpenDropdown(null);
-                        }}
-                      >
-                        <span className={styles.dropdownItemLabel}>{opt.label}</span>
-                        <span className={styles.dropdownItemDesc}>{opt.desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Filter 3: Ordenação */}
-            <div className={styles.filterBoxContainer}>
-              <button
-                type="button"
-                className={`${styles.filterBox} ${openDropdown === "sort" ? styles.filterBoxActive : ""}`}
-                onClick={() => setOpenDropdown(openDropdown === "sort" ? null : "sort")}
-              >
-                <div className={styles.filterBoxTextGroup}>
-                  <span className={styles.filterBoxTitle}>{selectedSort}</span>
-                  <span className={styles.filterBoxDesc}>
-                    {SORT_OPTIONS.find((s) => s.label === selectedSort)?.desc ?? "Mais Recente • Menor Preço"}
-                  </span>
-                </div>
-                <ChevronDownIcon size={16} className={styles.filterChevron} />
-              </button>
-
-              {openDropdown === "sort" && (
-                <>
-                  <div className={styles.dropdownBackdrop} onClick={() => setOpenDropdown(null)} />
-                  <div className={styles.dropdownMenu}>
-                    {SORT_OPTIONS.map((opt) => (
-                      <div
-                        key={opt.label}
-                        className={`${styles.dropdownItem} ${selectedSort === opt.label ? styles.dropdownItemActive : ""}`}
-                        onClick={() => {
-                          setSelectedSort(opt.label);
-                          setOpenDropdown(null);
-                        }}
-                      >
-                        <span className={styles.dropdownItemLabel}>{opt.label}</span>
-                        <span className={styles.dropdownItemDesc}>{opt.desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            ))}
           </div>
         </section>
 
