@@ -472,6 +472,7 @@ export default function Home() {
             </div>
           </div>
         </div>
+        <div className={styles.heroFadeBottom} />
       </section>
 
       <main className={styles.main}>

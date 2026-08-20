@@ -65,7 +65,25 @@
   background:
     radial-gradient(ellipse 900px 520px at 78% 15%, rgba(255, 178, 44, 0.14), transparent 62%),
     radial-gradient(ellipse 1100px 640px at 15% 95%, rgba(255, 178, 44, 0.06), transparent 65%),
-    linear-gradient(180deg, #050608 0%, #0b0c10 60%, #0b0c10 100%);
+    linear-gradient(180deg, #050608 0%, #08090d 45%, var(--color-bg) 100%);
+}
+
+.heroFadeBottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 220px;
+  background: linear-gradient(
+    to bottom,
+    rgba(11, 12, 16, 0) 0%,
+    rgba(11, 12, 16, 0.25) 30%,
+    rgba(11, 12, 16, 0.65) 65%,
+    rgba(11, 12, 16, 0.95) 88%,
+    var(--color-bg) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
 }
 
 .heroBeams {
@@ -92,7 +110,7 @@
 
 .heroContent {
   position: relative;
-  z-index: 1;
+  z-index: 3;
   width: 100%;
   max-width: 1760px;
   margin: 0 auto;

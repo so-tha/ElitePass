@@ -4,27 +4,38 @@
   flex-direction: column;
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
-  border-radius: 2px;
+  border-radius: 6px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+.cardContainer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 6;
+  opacity: 0.90;
+  mix-blend-mode: overlay;
+}
+
 .cardContainer:hover {
-  transform: translateY(-6px);
+  transform: translateY(-4px);
   border-color: var(--color-primary);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 178, 44, 0.2);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 178, 44, 0.2);
 }
 
 /* ─────────────────────────────────────────────────────────────────── */
-/* IMAGE WRAPPER & OVERLAY */
+/* IMAGE WRAPPER & OVERLAY (Reduzido em ~4cm) */
 /* ─────────────────────────────────────────────────────────────────── */
 
 .cardImageWrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3.4;
+  aspect-ratio: 16 / 9.5;
   overflow: hidden;
   background: var(--color-bg-hover);
 }
@@ -37,7 +48,7 @@
 }
 
 .cardContainer:hover .cardImage {
-  transform: scale(1.12);
+  transform: scale(1.1);
 }
 
 .cardOverlay {
@@ -58,8 +69,8 @@
 
 .badgeGroup {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: 10px;
+  left: 10px;
   display: flex;
   gap: 0;
   z-index: 10;
@@ -72,9 +83,9 @@
 .categoryBadge {
   display: inline-flex;
   align-items: center;
-  padding: 7px 14px;
-  border-radius: 3px;
-  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -88,16 +99,16 @@
 
 .ratingBadge {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 10px;
+  right: 10px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.75);
-  border-radius: 3px;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 4px;
   color: var(--color-primary);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
   z-index: 10;
 }
@@ -111,14 +122,14 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────── */
-/* CARD CONTENT (Text Section) */
+/* CARD CONTENT (Text Section Reduzida) */
 /* ─────────────────────────────────────────────────────────────────── */
 
 .cardContent {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 20px 18px;
+  gap: 8px;
+  padding: 12px 14px;
   flex: 1;
   overflow: hidden;
 }
@@ -126,14 +137,14 @@
 .cardHeader {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 6px;
 }
 
 .cardTitle {
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--color-text);
-  line-height: 1.3;
+  line-height: 1.25;
   text-transform: uppercase;
   letter-spacing: 0.2px;
   display: -webkit-box;
@@ -151,7 +162,7 @@
 .metaGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   flex: 1;
   min-height: 0;
 }
@@ -159,10 +170,10 @@
 .metaItem {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 11px;
   color: var(--color-text-dim);
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .metaItem svg {
@@ -183,15 +194,15 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────── */
-/* FOOTER (Price + Button) */
+/* FOOTER (Price + Button Reduzidos) */
 /* ─────────────────────────────────────────────────────────────────── */
 
 .cardFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding-top: 14px;
+  gap: 8px;
+  padding-top: 8px;
   border-top: 1px solid var(--color-border);
   margin-top: auto;
 }
@@ -199,11 +210,11 @@
 .priceInfo {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .priceLabel {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--color-text-dim);
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -211,22 +222,22 @@
 }
 
 .priceValue {
-  font-size: 22px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--color-primary);
-  letter-spacing: -0.4px;
+  letter-spacing: -0.3px;
 }
 
 .ctaButton {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 18px;
+  gap: 5px;
+  padding: 6px 12px;
   background: var(--color-primary);
   color: #000000;
   border: none;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 4px;
+  font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3px;
