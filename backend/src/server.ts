@@ -66,10 +66,17 @@ app.use(errorHandler);
 const httpServer = createServer(app);
 initSocket(httpServer, env.FRONTEND_URL ?? "http://localhost:3000");
 
+// O try/catch é obrigatório: uma rejeição não tratada dentro de um callback async de
+// setInterval derruba o processo inteiro no Node. Uma indisponibilidade momentânea do
+// banco deve apenas pular esta varredura, não matar a API.
 setInterval(async () => {
-  const released = await releaseExpiredHolds();
-  for (const { eventId, label } of released) {
-    broadcastSeatUpdate(eventId, { label, status: "AVAILABLE" });
+  try {
+    const released = await releaseExpiredHolds();
+    for (const { eventId, label } of released) {
+      broadcastSeatUpdate(eventId, { label, status: "AVAILABLE" });
+    }
+  } catch (err) {
+    console.error("[seat-sweep] Falha ao liberar reservas expiradas:", err);
   }
 }, SEAT_HOLD_SWEEP_INTERVAL_MS);
 
