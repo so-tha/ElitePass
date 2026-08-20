@@ -4,65 +4,6 @@
   "installCommand": "npm ci",
   "framework": "nextjs",
   "outputDirectory": ".next",
-  "env": [
-    {
-      "key": "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
-      "description": "Stripe Publishable Key (public)",
-      "value": ""
-    },
-    {
-      "key": "NEXT_PUBLIC_BACKEND_URL",
-      "description": "Backend API URL (e.g., https://api.seu-dominio.com)",
-      "value": "https://api.seu-dominio.com"
-    },
-    {
-      "key": "TICKETMASTER_API_KEY",
-      "description": "Ticketmaster API Key",
-      "value": ""
-    },
-    {
-      "key": "TMDB_READ_ACCESS_TOKEN",
-      "description": "TMDB API Read Access Token",
-      "value": ""
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/api/auth/:path*",
-      "destination": "${NEXT_PUBLIC_BACKEND_URL}/api/auth/:path*",
-      "permanent": false
-    },
-    {
-      "source": "/api/events/:path*",
-      "destination": "${NEXT_PUBLIC_BACKEND_URL}/api/events/:path*",
-      "permanent": false
-    },
-    {
-      "source": "/api/orders/:path*",
-      "destination": "${NEXT_PUBLIC_BACKEND_URL}/api/orders/:path*",
-      "permanent": false
-    },
-    {
-      "source": "/api/tickets/:path*",
-      "destination": "${NEXT_PUBLIC_BACKEND_URL}/api/tickets/:path*",
-      "permanent": false
-    },
-    {
-      "source": "/api/catalog/:path*",
-      "destination": "${NEXT_PUBLIC_BACKEND_URL}/api/catalog/:path*",
-      "permanent": false
-    },
-    {
-      "source": "/api/account/:path*",
-      "destination": "${NEXT_PUBLIC_BACKEND_URL}/api/account/:path*",
-      "permanent": false
-    },
-    {
-      "source": "/api/seats/:path*",
-      "destination": "${NEXT_PUBLIC_BACKEND_URL}/api/seats/:path*",
-      "permanent": false
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
