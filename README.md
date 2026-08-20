@@ -150,6 +150,96 @@ Para esses eventos, o cliente insere um **preço simulado** no frontend que é a
 
 ---
 
+## 💵 Preços Simulados — Arquitetura e Motivação
+
+### Por que Preços Simulados?
+
+O ElitePass integra **duas APIs externas de catálogo** que não fornecem dados de preço em tempo real:
+
+1. **Ticketmaster Discovery API** — removeu globalmente o campo `priceRanges` em março de 2025
+2. **TMDB (The Movie Database)** — focada em catálogo, sem dados comerciais de ingressos
+
+**Problema:** Sem dados reais de preço, a plataforma não consegue validar o valor que o usuário tentaria comprar. **Solução:** Usar preços simulados que são **determinísticos** (baseados no ID do evento) e consistentes em toda a aplicação.
+
+### Como Funcionam os Preços Simulados
+
+#### Algoritmo Determinístico (Arquivo: `src/lib/tmdb.ts` e `src/lib/ticketmaster.ts`)
+
+Os preços são **gerados a partir do ID único do evento**, garantindo que o mesmo evento sempre retorne o mesmo preço:
+
+```javascript
+export function generateMoviePrice(movie: TMDBMovie): { min: number; max: number; currency: string } {
+  // Seed determinístico baseado no ID do filme
+  const seed = movie.id % 1000;
+  const tiers = [
+    { min: 32, max: 55 },   // sessão normal
+    { min: 45, max: 70 },   // VIP / IMAX
+    { min: 55, max: 90 },   // IMAX + poltrona premium
+  ];
+  const tier = tiers[seed % tiers.length];
+  // Variação de centavos baseada no ID
+  const offset = (movie.id % 10) * 0.5;
+  return { min: tier.min + offset, max: tier.max + offset, currency: "BRL" };
+}
+```
+
+**O que acontece:**
+1. O ID do evento (ex: `603` para "The Matrix") determina qual tier será usado
+2. Cada tier tem um intervalo de preço (ex: R$ 32 a R$ 55 para sessão normal)
+3. A variação de centavos garante diversidade (R$ 32,50, R$ 33,00, R$ 33,50, etc.)
+4. **Sempre retorna o mesmo valor** para o mesmo evento (determinístico)
+
+#### Exemplos de Preços Gerados
+
+| Filme | ID | Seed (ID % 1000) | Tier | Preço Mín | Preço Máx | Variação |
+|-------|----|--------------------|------|-----------|-----------|-----------|
+| The Matrix | 603 | 603 | Normal | R$ 32,50 | R$ 55,50 | +1,50 |
+| Avatar | 19995 | 995 | Premium | R$ 58,75 | R$ 92,75 | +3,75 |
+| Inception | 27205 | 205 | VIP | R$ 48,25 | R$ 73,25 | +2,25 |
+
+### Validação Server-Side de Preços Simulados
+
+Apesar de simulados, **o backend valida rigorosamente**:
+
+```typescript
+// Arquivo: backend/src/app/api/orders/route.ts
+if (quantity <= 0 || quantity > 10) {
+  return NextResponse.json({ error: "Quantidade inválida" }, { status: 400 });
+}
+if (priceUnit <= 0) {
+  return NextResponse.json({ error: "Preço inválido" }, { status: 400 });
+}
+// Calcula taxa de 12% automaticamente
+const fee = Math.round(priceUnit * quantity * 0.12 * 100) / 100;
+const totalAmount = priceUnit * quantity + fee;
+```
+
+**Regras aplicadas:**
+- ✅ Quantidade entre 1 e 10 ingressos
+- ✅ Preço unitário sempre > 0
+- ✅ Taxa de serviço (12%) calculada automaticamente
+- ❌ Cliente **nunca consegue** colocar um preço negativo ou zero
+- ❌ Cliente **nunca consegue** comprar mais de 10 ingressos de uma vez (proteção contra abuso)
+
+### Diferença: Eventos Locais vs. Externos
+
+| Tipo | Preço | Validação | Exemplo |
+|------|-------|-----------|---------|
+| **Local** (Organizador cria) | Real, defindo pelo organizador | Server valida contra DB antes de vender | "Arctic Monkeys Tour" com R$ 150 pista, R$ 250 VIP |
+| **Externo** (Ticketmaster/TMDB) | Simulado, determinístico | Server valida formato e regras de negócio, não o valor | "Avatar 3" gera R$ 55,50 baseado no ID 19995 |
+
+### Como Será em Produção
+
+Para trocar para **preços reais**, bastaria:
+
+1. **Ticketmaster Commerce API** — Integrar ao endpoint de busca para retornar `priceRanges` reais
+2. **Stripe Payment Links** — Usar preços dinâmicos que vêm da Ticketmaster em tempo real
+3. **Remoção do simulador** — Deletar `generateMoviePrice()` e usar valores do catálogo externo
+
+**A arquitetura já suporta isso** — o `Order` model no banco não sabe se o preço é simulado ou real, apenas o valida.
+
+---
+
 ## ⚠️ Limitações Conhecidas
 
 ### Cancelamento de Ingressos — Ajuste Parcial de Receita
@@ -391,18 +481,27 @@ A seed do banco cria automaticamente 5 eventos de teste:
 
 O **cliente1@elitepass.com** já possui ingressos de alguns desses eventos (úteis para testar a validação na portaria e o cancelamento). O **cliente2@elitepass.com** entra sem nenhum ingresso, ideal para testar o fluxo de compra do zero.
 
-### Deploy
+### 🌐 Deploy em Produção
 
-| Camada | Plataforma recomendada |
-|--------|------------------------|
-| **Frontend** (raiz) | Vercel — detecção automática do Next.js |
-| **Backend** (`/backend`) | Railway ou Render |
-| **Banco de dados** | Supabase (PostgreSQL gerenciado) |
+Este projeto está configurado para deploy em **three managed platforms** — cada uma lidando com uma camada da aplicação:
+
+| Camada | Plataforma | Observação |
+|--------|-----------|-----------|
+| **Frontend** (raiz) | [Vercel](https://vercel.com) | Detecta Next.js automaticamente; variáveis em Project Settings → Environment Variables |
+| **Backend** (`/backend`) | [Render](https://render.com) | Free tier com hibernação após 15 min de inatividade; recomendado para dev/demo |
+| **Banco de dados** | [Neon](https://neon.tech) | PostgreSQL serverless; free tier permanente (~0.5GB); ideal para começar |
+
+#### ⚡ Observações sobre o Free Tier
+
+- **Render:** A instância hiberna após ~15 min de inatividade; o primeiro acesso volta a ativar (pode levar ~50s). Socket.IO reconecta automaticamente.
+- **Neon:** Pausa computação após 1 semana de inatividade, mas ativa automaticamente. Dados permanecem.
+- Ambas têm 100% de uptime (não são experimentais), apenas com limitações de recursos.
 
 ---
-
+### Comentarios
+ Coisas que ue poderia melhorar com toda certeza foi o front-end, principalmente no modo claro, mas como foquei bem no back-end o front não saiu da maneira que gostaria. A IA me ajudou demais em boa parte do codigo porém, teve alguns B.O's que eu tive que resolver sozinha como o final que envolvia o deploy, a configuração das tres plataformas diferentes que usei (Vercel pro front, Render pro Back e Neon para o bd), e também também foi uma luta para ela não deixar o front do jeito que ela queria e não do modo que eu almejava. Utilizei o color hunt para encontrar uma paleta de cores que fizesse sentido de inicio, tive problemas com a questão dos preços vindo da API do Ticketmaster como disse em uma seção acima e com eventos retornando com o tipo undefined. Enfim, eu poderia ter feito muito melhor, porém é o que eu consegui em 6 dias pois queria entregar um dia antes do limite.
 ---
 
 <p align="center">
-  Feito por <strong>so-tha</strong> — Identidade visual criada com o auxílio da <strong>IA Gemini</strong>
+  Feito por <strong>so-tha</strong> — Identidade visual criada com o auxílio da <strong>IA Gemini e Claude</strong>
 </p>
