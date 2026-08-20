@@ -85,7 +85,7 @@ export default function TicketsPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) router.replace("/");
+    if (!user) router.replace("/?openLogin=true");
   }, [authLoading, user, router]);
 
   useEffect(() => {

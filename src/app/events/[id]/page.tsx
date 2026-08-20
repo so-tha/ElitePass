@@ -198,13 +198,18 @@ export default function EventPage() {
 function EventCheckout() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { user, accessToken } = useAuth();
+  const { user, accessToken, loading: authLoading } = useAuth();
   const stripe = useStripe();
   const elements = useElements();
 
   const [event, setEvent] = useState<TMEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) router.replace("/?openLogin=true");
+  }, [authLoading, user, router, id]);
 
   const [tiers, setTiers] = useState<TicketTier[]>([]);
   const [selectedTier, setSelectedTier] = useState<TicketTier | null>(null);

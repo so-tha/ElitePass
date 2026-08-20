@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./Navbar.module.css";
 import { PlusIcon, TicketIcon, UserIcon, HeartIcon, GridIcon, LogOutIcon, SunIcon, MoonIcon, ScanIcon, SearchIcon } from "./icons";
 import { AuthModal } from "./AuthModal";
@@ -14,6 +14,35 @@ import { ConfirmModal } from "./ConfirmModal";
 interface NavbarProps {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+}
+
+function LoginParamHandler({
+  authModalOpen,
+  setAuthModalOpen,
+  setAuthMode,
+}: {
+  authModalOpen: boolean;
+  setAuthModalOpen: (open: boolean) => void;
+  setAuthMode: (mode: "login" | "register") => void;
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const openLoginHandledRef = useRef(false);
+
+  useEffect(() => {
+    const openLogin = searchParams.get("openLogin");
+    if (openLogin === "true" && !openLoginHandledRef.current) {
+      openLoginHandledRef.current = true;
+      setAuthModalOpen(true);
+      setAuthMode("login");
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("openLogin");
+      const newUrl = newParams.toString() ? `?${newParams}` : "/";
+      router.replace(newUrl);
+    }
+  }, [searchParams, router, setAuthModalOpen, setAuthMode]);
+
+  return null;
 }
 
 export function Navbar({ searchValue, onSearchChange }: NavbarProps = {}) {
@@ -197,6 +226,14 @@ export function Navbar({ searchValue, onSearchChange }: NavbarProps = {}) {
           )}
         </div>
       </header>
+
+      <Suspense fallback={null}>
+        <LoginParamHandler
+          authModalOpen={authModalOpen}
+          setAuthModalOpen={setAuthModalOpen}
+          setAuthMode={setAuthMode}
+        />
+      </Suspense>
 
       <AuthModal
         isOpen={authModalOpen}

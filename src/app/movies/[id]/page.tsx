@@ -129,11 +129,16 @@ function isValidExpiry(e: string): boolean {
 export default function MoviePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { user, accessToken } = useAuth();
+  const { user, accessToken, loading: authLoading } = useAuth();
 
   const [movie, setMovie]   = useState<TMDBMovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) router.replace("/?openLogin=true");
+  }, [authLoading, user, router, id]);
 
   const [tiers, setTiers]             = useState<TicketTier[]>([]);
   const [selectedTier, setSelectedTier] = useState<TicketTier | null>(null);
