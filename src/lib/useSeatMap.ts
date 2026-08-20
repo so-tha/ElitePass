@@ -33,11 +33,11 @@ export function useSeatMap(eventId: string, userId: string | null, accessToken: 
     if (!eventId) return;
 
     let cancelled = false;
-    setLoading(true);
-    setLoadError(null);
-    setSelected([]);
 
     (async () => {
+      setLoading(true);
+      setLoadError(null);
+      setSelected([]);
       try {
         const res = await fetch(`/api/seats/${encodeURIComponent(eventId)}`, { cache: "no-store" });
         const data: SeatMapResponse = await res.json();

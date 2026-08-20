@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Backend build/generated output (gitignored, not present in a fresh checkout):
+    "backend/dist/**",
+    "backend/generated/**",
+    "backend/src/generated/**",
   ]),
 ]);
 

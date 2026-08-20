@@ -185,7 +185,9 @@ export default function MoviePage() {
     }
   }, [id]);
 
-  useEffect(() => { fetchMovie(); }, [fetchMovie]);
+  useEffect(() => {
+    (async () => { await fetchMovie(); })();
+  }, [fetchMovie]);
 
   // form helpers
   const handleField = (field: keyof typeof form, value: string) => {

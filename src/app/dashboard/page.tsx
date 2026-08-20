@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -51,16 +51,18 @@ export default function DashboardPage() {
   const [orgSaving, setOrgSaving] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get("tab");
-    if (tabParam === "eventos" || tabParam === "dashboard" || tabParam === "config") {
-      setActiveTab(tabParam);
-    } else if (tabParam === "novo") {
-      setIsCreateOpen(true);
-    }
+    (() => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "eventos" || tabParam === "dashboard" || tabParam === "config") {
+        setActiveTab(tabParam);
+      } else if (tabParam === "novo") {
+        setIsCreateOpen(true);
+      }
+    })();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     if (!accessToken) return;
     try {
       setLoading(true);
@@ -76,7 +78,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -84,8 +86,8 @@ export default function DashboardPage() {
       queueMicrotask(() => setLoading(false));
       return;
     }
-    fetchDashboardData();
-  }, [authLoading, accessToken]);
+    (async () => { await fetchDashboardData(); })();
+  }, [authLoading, accessToken, fetchDashboardData]);
 
   useEffect(() => {
     if (activeTab !== "config" || orgLoaded || !accessToken) return;

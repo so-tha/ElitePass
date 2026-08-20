@@ -24,7 +24,7 @@ export async function getShows(req: Request, res: Response): Promise<void> {
 
     const data = await response.json();
     res.json(data);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Erro ao conectar com API Ticketmaster" });
   }
 }
@@ -54,7 +54,7 @@ export async function getMovies(req: Request, res: Response): Promise<void> {
 
     const data = await response.json();
     res.json(data);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Erro ao conectar com API TMDB" });
   }
 }

@@ -7,7 +7,6 @@ import EventCard from "@/components/EventCard";
 import {
   AlertTriangleIcon,
   TicketIcon,
-  PlayIcon,
 } from "@/components/icons";
 import {
   TMEvent,
@@ -221,8 +220,10 @@ export default function Home() {
   const [moviesError, setMoviesError] = useState<string | null>(null);
 
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get("search");
-    if (q) setSearch(q);
+    (() => {
+      const q = new URLSearchParams(window.location.search).get("search");
+      if (q) setSearch(q);
+    })();
   }, []);
 
   const fetchMovies = useCallback(async (keyword = "") => {

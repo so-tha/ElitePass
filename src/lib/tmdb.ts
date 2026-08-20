@@ -78,7 +78,7 @@ export function tmdbBackdrop(path: string | null, size: "w780" | "w1280" | "orig
 
 export function generateMoviePrice(movie: TMDBMovie): { min: number; max: number; currency: string } {
   // Seed determinístico baseado no ID do filme
-  let seed = movie.id % 1000;
+  const seed = movie.id % 1000;
   const tiers = [
     { min: 32, max: 55 },   // sessão normal
     { min: 45, max: 70 },   // VIP / IMAX

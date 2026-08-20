@@ -106,7 +106,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (authLoading || !user || !accessToken) return;
-    fetchProfile();
+    (async () => { await fetchProfile(); })();
   }, [authLoading, user, accessToken, fetchProfile]);
 
   const showToast = (message: string) => {

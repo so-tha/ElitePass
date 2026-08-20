@@ -31,12 +31,16 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-  useEffect(() => {
-    setMode(initialMode);
-    setError(null);
-    setSuccess(null);
-  }, [initialMode, isOpen]);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setMode(initialMode);
+      setError(null);
+      setSuccess(null);
+    }
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

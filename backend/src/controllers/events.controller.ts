@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma";
+import type { Prisma } from "../generated/client/client";
 import { tierSchema } from "../lib/eventTiers";
 import { AuthenticatedRequest } from "../middlewares/requireAuth";
 
@@ -73,7 +74,7 @@ export async function createEvent(req: Request, res: Response): Promise<void> {
 export async function getEvents(req: Request, res: Response): Promise<void> {
   const { search, category, type } = req.query;
 
-  const where: any = {
+  const where: Prisma.EventWhereInput = {
     status: "PUBLISHED",
   };
 
@@ -233,7 +234,7 @@ export async function getEventStats(req: Request, res: Response): Promise<void> 
   const { userId } = (req as AuthenticatedRequest).user;
   const id         = req.params.id as string;
 
-  const event = (await prisma.event.findUnique({
+  const event = await prisma.event.findUnique({
     where: { id },
     include: {
       orders: {
@@ -241,7 +242,7 @@ export async function getEventStats(req: Request, res: Response): Promise<void> 
         include: { tickets: true },
       },
     },
-  })) as any;
+  });
 
   if (!event) {
     res.status(404).json({ error: "Evento não encontrado." });
@@ -377,7 +378,7 @@ export async function getOrganizerDashboard(req: Request, res: Response): Promis
       events: formattedEvents,
       recentActivities,
     });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Erro ao carregar relatórios do banco de dados." });
   }
 }

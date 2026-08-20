@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import styles from "./UserMenu.module.css";
-import { UserIcon, HeartIcon, TicketIcon, GridIcon, LogOutIcon, ChevronDownIcon, ShieldCheckIcon } from "./icons";
+import { UserIcon, GridIcon, LogOutIcon, ChevronDownIcon, ShieldCheckIcon } from "./icons";
 import { useAuth } from "@/lib/auth-context";
 import { ConfirmModal } from "./ConfirmModal";
 

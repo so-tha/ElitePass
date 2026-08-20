@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./Navbar.module.css";
-import { PlusIcon, TicketIcon, UserIcon, HeartIcon, GridIcon, LogOutIcon, SunIcon, MoonIcon, ScanIcon, SearchIcon } from "./icons";
+import { PlusIcon, TicketIcon, UserIcon, GridIcon, LogOutIcon, SunIcon, MoonIcon, SearchIcon } from "./icons";
 import { AuthModal } from "./AuthModal";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "@/lib/auth-context";
@@ -17,11 +17,9 @@ interface NavbarProps {
 }
 
 function LoginParamHandler({
-  authModalOpen,
   setAuthModalOpen,
   setAuthMode,
 }: {
-  authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
   setAuthMode: (mode: "login" | "register") => void;
 }) {
@@ -229,7 +227,6 @@ export function Navbar({ searchValue, onSearchChange }: NavbarProps = {}) {
 
       <Suspense fallback={null}>
         <LoginParamHandler
-          authModalOpen={authModalOpen}
           setAuthModalOpen={setAuthModalOpen}
           setAuthMode={setAuthMode}
         />

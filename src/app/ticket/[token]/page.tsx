@@ -22,10 +22,10 @@ export default function SharedTicketPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
 
     (async () => {
+      setLoading(true);
+      setError(null);
       try {
         const res = await fetch(`/api/tickets/share/${encodeURIComponent(token)}`, { cache: "no-store" });
         const data = await res.json();

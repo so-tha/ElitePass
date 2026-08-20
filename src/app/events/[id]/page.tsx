@@ -249,7 +249,9 @@ function EventCheckout() {
     }
   }, [id]);
 
-  useEffect(() => { fetchEvent(); }, [fetchEvent]);
+  useEffect(() => {
+    (async () => { await fetchEvent(); })();
+  }, [fetchEvent]);
 
   // form helpers
   const handleField = (field: keyof typeof form, value: string) => {
