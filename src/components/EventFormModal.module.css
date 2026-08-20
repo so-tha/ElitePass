@@ -23,12 +23,12 @@
   max-width: 640px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
-  background: #121215;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
   border-radius: 20px;
   padding: 32px 28px 28px;
   position: relative;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -47,9 +47,9 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #a1a1aa;
+  background: var(--color-bg-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -58,14 +58,14 @@
 }
 
 .closeBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fafafa;
+  background: var(--color-border);
+  color: var(--color-text);
 }
 
 .title {
   font-size: 20px;
   font-weight: 700;
-  color: #fafafa;
+  color: var(--color-text);
 }
 
 .errorBanner {
@@ -74,9 +74,9 @@
   gap: 8px;
   padding: 10px 14px;
   border-radius: 8px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #f87171;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
   font-size: 13px;
 }
 
@@ -103,7 +103,7 @@
 .label {
   font-size: 12px;
   font-weight: 600;
-  color: #a1a1aa;
+  color: var(--color-text-muted);
   letter-spacing: 0.2px;
 }
 
@@ -111,10 +111,10 @@
 .textarea {
   width: 100%;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: var(--color-bg-hover);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  color: #fafafa;
+  color: var(--color-text);
   font-size: 14px;
   font-family: var(--font-base);
   outline: none;
@@ -126,7 +126,6 @@
 .input:focus,
 .textarea:focus {
   border-color: var(--color-primary);
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .tiersSection {
@@ -134,7 +133,7 @@
   flex-direction: column;
   gap: 10px;
   padding-top: 4px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--color-border);
 }
 
 .tiersHeader {
@@ -173,9 +172,9 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #a1a1aa;
+  background: var(--color-bg-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -184,9 +183,9 @@
 }
 
 .btnRemoveTier:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #f87171;
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger);
 }
 
 .btnRemoveTier:disabled {
@@ -204,9 +203,9 @@
 .btnCancel {
   padding: 11px 20px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #a1a1aa;
+  background: var(--color-bg-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -214,8 +213,8 @@
 }
 
 .btnCancel:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fafafa;
+  background: var(--color-border);
+  color: var(--color-text);
 }
 
 .btnSubmit {

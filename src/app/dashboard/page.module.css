@@ -61,14 +61,14 @@
   font-size: 20px;
   font-weight: 800;
   letter-spacing: 1px;
-  color: #ffffff;
+  color: var(--color-text);
   line-height: 1;
   text-transform: uppercase;
 }
 
 .logoRole {
   font-size: 11px;
-  color: #71717a;
+  color: var(--color-text-dim);
   font-weight: 500;
   margin-top: 3px;
 }
@@ -87,7 +87,7 @@
   border-radius: 10px;
   background: transparent;
   border: none;
-  color: #a1a1aa;
+  color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -96,8 +96,8 @@
 }
 
 .navItem:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text);
+  background: var(--color-bg-hover);
 }
 
 .navItemActive {
@@ -112,7 +112,7 @@
   flex-direction: column;
   gap: 16px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--color-border);
 }
 
 .logoutBtn {
@@ -123,7 +123,7 @@
   border-radius: 10px;
   background: transparent;
   border: none;
-  color: #a1a1aa;
+  color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -131,8 +131,8 @@
 }
 
 .logoutBtn:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
 }
 
 /* ── MAIN DASHBOARD AREA ── */
@@ -161,13 +161,13 @@
 .pageTitle {
   font-size: 28px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--color-text);
   letter-spacing: -0.5px;
 }
 
 .pageSubtitle {
   font-size: 14px;
-  color: #71717a;
+  color: var(--color-text-dim);
 }
 
 .btnNewEvent {
@@ -207,7 +207,7 @@
 .sectionTitle {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .viewAllLink {
@@ -231,8 +231,8 @@
 }
 
 .kpiCard {
-  background: #121215;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 20px;
   display: flex;
@@ -245,7 +245,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #71717a;
+  color: var(--color-text-dim);
   font-size: 13px;
   font-weight: 500;
 }
@@ -253,7 +253,7 @@
 .kpiValue {
   font-size: 26px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--color-text);
   letter-spacing: -0.5px;
 }
 
@@ -268,7 +268,7 @@
 
 .kpiTrendNegative {
   font-size: 12px;
-  color: #ef4444;
+  color: var(--color-danger);
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -277,7 +277,7 @@
 
 .kpiTrendNeutral {
   font-size: 12px;
-  color: #71717a;
+  color: var(--color-text-dim);
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -286,8 +286,8 @@
 
 /* ── SEUS EVENTOS TABLE ── */
 .eventsCard {
-  background: #121215;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   overflow: hidden;
 }
@@ -296,8 +296,8 @@
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 120px 120px;
   padding: 16px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  color: #71717a;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-dim);
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -309,7 +309,7 @@
   grid-template-columns: 2fr 1fr 1fr 120px 120px;
   padding: 18px 24px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--color-border);
   transition: background 0.2s ease;
 }
 
@@ -318,7 +318,7 @@
 }
 
 .eventRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-bg-hover);
 }
 
 .eventInfoCell {
@@ -332,7 +332,7 @@
   height: 48px;
   border-radius: 10px;
   object-fit: cover;
-  background: #1c1c20;
+  background: var(--color-bg-hover);
 }
 
 .eventMeta {
@@ -344,12 +344,12 @@
 .eventName {
   font-size: 15px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .eventSub {
   font-size: 12px;
-  color: #71717a;
+  color: var(--color-text-dim);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -358,7 +358,7 @@
 .ticketsCell {
   font-size: 14px;
   font-weight: 600;
-  color: #fafafa;
+  color: var(--color-text);
 }
 
 .revenueCell {
@@ -383,8 +383,8 @@
   display: inline-flex;
   padding: 4px 10px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #a1a1aa;
+  background: var(--color-bg-hover);
+  color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -395,8 +395,8 @@
   display: inline-flex;
   padding: 4px 10px;
   border-radius: 6px;
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -404,9 +404,9 @@
 }
 
 .btnCardActionDanger {
-  background: rgba(239, 68, 68, 0.1) !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
-  color: #ef4444 !important;
+  background: var(--color-danger-bg) !important;
+  border-color: var(--color-danger-border) !important;
+  color: var(--color-danger) !important;
 }
 
 .btnCardActionDanger:hover {
@@ -430,9 +430,9 @@
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #a1a1aa;
+  background: var(--color-bg-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -441,16 +441,16 @@
 }
 
 .actionBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--color-border);
+  color: var(--color-text);
 }
 
 /* ── ATIVIDADE RECENTE ── */
 .activityList {
   display: flex;
   flex-direction: column;
-  background: #121215;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   overflow: hidden;
 }
@@ -460,7 +460,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .activityItem:last-child {
@@ -493,17 +493,17 @@
 .activityTitle {
   font-size: 14px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .activitySub {
   font-size: 12px;
-  color: #71717a;
+  color: var(--color-text-dim);
 }
 
 .activityTime {
   font-size: 12px;
-  color: #71717a;
+  color: var(--color-text-dim);
 }
 
 /* ── GERENCIAMENTO DE MEUS EVENTOS (GRID VIEW) ── */
@@ -514,8 +514,8 @@
 }
 
 .eventCard {
-  background: #121215;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   overflow: hidden;
   display: flex;
@@ -524,7 +524,7 @@
 }
 
 .eventCard:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--color-text-dim);
   transform: translateY(-2px);
 }
 
@@ -532,7 +532,7 @@
   height: 150px;
   position: relative;
   overflow: hidden;
-  background: #1a1a1e;
+  background: var(--color-bg-hover);
 }
 
 .cardImage {
@@ -558,7 +558,7 @@
 .cardTitle {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .cardMeta {
@@ -566,7 +566,7 @@
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
-  color: #a1a1aa;
+  color: var(--color-text-muted);
 }
 
 .cardMetaRow {
@@ -580,7 +580,7 @@
   flex-direction: column;
   gap: 6px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--color-border);
 }
 
 .progressHeader {
@@ -588,12 +588,12 @@
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
-  color: #a1a1aa;
+  color: var(--color-text-muted);
 }
 
 .progressBarTrack {
   height: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-border);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -606,11 +606,11 @@
 
 .cardFooterActions {
   padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--color-bg-hover);
 }
 
 .btnCardAction {
@@ -619,9 +619,9 @@
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #fafafa;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -629,8 +629,8 @@
 }
 
 .btnCardAction:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-border);
+  border-color: var(--color-text-dim);
 }
 
 .btnCardActionPrimary {
@@ -699,15 +699,14 @@
 }
 
 select.formInput {
-  color-scheme: dark;
-  background-color: #121215;
-  color: #ffffff;
+  background-color: var(--color-bg-card);
+  color: var(--color-text);
   cursor: pointer;
 }
 
 select.formInput option {
-  background-color: #121215 !important;
-  color: #ffffff !important;
+  background-color: var(--color-bg-card) !important;
+  color: var(--color-text) !important;
   padding: 12px 16px;
 }
 
@@ -772,10 +771,10 @@ select.formInput option:checked {
 
 /* ── IMAGE UPLOADER DROPZONE ── */
 .imageDropzone {
-  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border: 2px dashed var(--color-border);
   border-radius: 12px;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-bg-hover);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -812,7 +811,7 @@ select.formInput option:checked {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  color: #a1a1aa;
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 

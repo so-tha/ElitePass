@@ -18,14 +18,14 @@
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #111 25%, #1e1e1e 50%, #111 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
   border-radius: var(--radius-lg);
 }
 
 .skeletonBlock {
-  background: linear-gradient(90deg, #111 25%, #1e1e1e 50%, #111 75%);
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-highlight) 50%, var(--skeleton-base) 75%);
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
   border-radius: var(--radius-lg);
@@ -42,7 +42,7 @@
   text-align: center;
   padding: 32px;
 }
-.errorIcon { color: #ff6b6b; }
+.errorIcon { color: var(--color-danger); }
 .errorPage h2 { font-size: 24px; font-weight: 700; color: var(--color-text); }
 .errorPage p  { color: var(--color-text-muted); font-size: 15px; }
 
@@ -166,7 +166,7 @@
 .heroTitle {
   font-size: clamp(22px, 3.5vw, 42px);
   font-weight: 800;
-  color: var(--color-text);
+  color: #ffffff;
   line-height: 1.1;
   letter-spacing: -0.5px;
 }
@@ -216,7 +216,7 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   border: 1.5px solid rgba(255, 255, 255, 0.3);
-  color: var(--color-text);
+  color: #ffffff;
   font-size: 13px;
   font-weight: 700;
   width: fit-content;
@@ -426,9 +426,9 @@
 }
 .formInput::placeholder { color: var(--color-text-dim); }
 .formInput:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-glow); }
-.inputError { border-color: #8b0000 !important; }
+.inputError { border-color: var(--color-danger) !important; }
 
-.errorMsg { font-size: 11px; color: #ff6b6b; margin-top: 2px; }
+.errorMsg { font-size: 11px; color: var(--color-danger); margin-top: 2px; }
 
 .btnSpinner { display: flex; align-items: center; justify-content: center; gap: 8px; }
 
@@ -530,9 +530,9 @@
   gap: 5px;
   padding: 4px 14px;
   border-radius: 999px;
-  background: rgba(0, 180, 100, 0.15);
-  border: 1px solid rgba(0, 180, 100, 0.4);
-  color: #4ade80;
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success);
   font-size: 12px;
   font-weight: 700;
 }
@@ -546,7 +546,7 @@
 /* Dashed divider (perforated effect) */
 .tcDivider {
   border: none;
-  border-top: 2px dashed rgba(255, 255, 255, 0.1);
+  border-top: 2px dashed var(--color-border);
   margin: 0;
 }
 
@@ -556,12 +556,12 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  border-bottom: 2px dashed rgba(255, 255, 255, 0.1);
+  border-bottom: 2px dashed var(--color-border);
 }
 .qrCode {
   border-radius: 12px;
   border: 2px solid rgba(255, 178, 44, 0.3);
-  background: #1a1a1a;
+  background: #ffffff;
 }
 .tcTicketCode {
   font-family: monospace;

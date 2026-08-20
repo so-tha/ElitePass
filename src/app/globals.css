@@ -28,6 +28,27 @@
   --color-gold-dark:   #cc8a00;
   --color-terra:       #854836;
 
+  /* Cores semânticas de status (sucesso/erro/aviso/info) */
+  --color-success:        #4ade80;
+  --color-success-bg:     rgba(34, 197, 94, 0.16);
+  --color-success-border: rgba(34, 197, 94, 0.4);
+
+  --color-danger:        #f87171;
+  --color-danger-bg:     rgba(239, 68, 68, 0.14);
+  --color-danger-border: rgba(239, 68, 68, 0.35);
+
+  --color-warning:        #fbbf24;
+  --color-warning-bg:     rgba(245, 158, 11, 0.16);
+  --color-warning-border: rgba(245, 158, 11, 0.4);
+
+  --color-info:        #60a5fa;
+  --color-info-bg:     rgba(56, 139, 253, 0.14);
+  --color-info-border: rgba(56, 139, 253, 0.3);
+
+  /* Skeleton (estados de carregamento) */
+  --skeleton-base:      #1a1d26;
+  --skeleton-highlight: #262b38;
+
   /* Tipografia */
   --font-base:    var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
   --font-display: var(--font-display), 'Bebas Neue', sans-serif;
@@ -57,6 +78,25 @@
   --color-text:        #12141d;
   --color-text-muted:  #5e6475;
   --color-text-dim:    #8c92a4;
+
+  --color-success:        #15803d;
+  --color-success-bg:     rgba(22, 163, 74, 0.1);
+  --color-success-border: rgba(22, 163, 74, 0.3);
+
+  --color-danger:        #dc2626;
+  --color-danger-bg:     rgba(220, 38, 38, 0.08);
+  --color-danger-border: rgba(220, 38, 38, 0.25);
+
+  --color-warning:        #b45309;
+  --color-warning-bg:     rgba(217, 119, 6, 0.1);
+  --color-warning-border: rgba(217, 119, 6, 0.3);
+
+  --color-info:        #1d4ed8;
+  --color-info-bg:     rgba(37, 99, 235, 0.08);
+  --color-info-border: rgba(37, 99, 235, 0.25);
+
+  --skeleton-base:      #e8eaf0;
+  --skeleton-highlight: #f6f7fa;
 
   color-scheme: light;
 }

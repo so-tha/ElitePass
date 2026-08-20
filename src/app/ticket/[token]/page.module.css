@@ -77,9 +77,9 @@
   text-transform: uppercase;
 }
 
-.badgeVALID { background: rgba(34, 197, 94, 0.18); color: #22c55e; }
-.badgeUSED { background: rgba(245, 158, 11, 0.18); color: #f59e0b; }
-.badgeCANCELLED { background: rgba(239, 68, 68, 0.18); color: #ef4444; }
+.badgeVALID { background: var(--color-success-bg); color: var(--color-success); }
+.badgeUSED { background: var(--color-warning-bg); color: var(--color-warning); }
+.badgeCANCELLED { background: var(--color-danger-bg); color: var(--color-danger); }
 
 .eventName {
   font-size: 22px;
